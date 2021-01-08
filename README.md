@@ -53,4 +53,5 @@ $ python3 idahunt.py --inputdir C:\xxxx --filter "names.py -a 32 -v" --scripts "
 - 完善漏洞判断逻辑，降低误报率
 - 加入动态污点分析作为辅助
 - 支持更多体系架构，如 x86、MIPS 等
+- 迁移到 IDA 7.5，Python3
 
