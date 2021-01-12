@@ -1,8 +1,4 @@
-#!/usr/bin/python3
-#
-# This file is part of idahunt.
-# Copyright (c) 2017, Aaron Adams <aaron.adams(at)nccgroup(dot)trust>
-# Copyright (c) 2017, Cedric Halbronn <cedric.halbronn(at)nccgroup(dot)trust>
+# -*- coding: utf-8 -*-
 #
 # Filter for arbitrary names to be used by idahunt.py command line:
 # e.g. idahunt.py --filter "filters/names.py -n Download -e exe -a 32"
@@ -26,12 +22,11 @@ def logmsg(s, end=None, debug=True):
     else:
         print(s)
 
-# do we actually treat it?
 def filter(f, name, extension, arch, length, verbose=True):
     if name and not name in os.path.basename(f):
         logmsg("Skipping non-matching name %s in %s" % (name, os.path.basename(f)))
         return None
-    filename, file_extension = os.path.splitext(f)
+    _, file_extension = os.path.splitext(f)
     if extension and not extension.startswith("."):
         extension = "." + extension
     if extension and file_extension != extension:
@@ -57,16 +52,12 @@ def filter(f, name, extension, arch, length, verbose=True):
     return f, arch_
 
 def main(f, cmdline):
-    # We override sys.argv so argparse can parse our arguments :)
     sys.argv = cmdline.split()
 
     parser = argparse.ArgumentParser(prog=cmdline)
-    parser.add_argument('-n', dest='name', default=None, help='pattern \
-                        to include in the name')
-    parser.add_argument('-e', dest='extension', default=None, help='Exact \
-                        extension to match')
-    parser.add_argument('-a', dest='arch', default=None, help='Assume \
-                         architecture known by user')
+    parser.add_argument('-n', dest='name', default=None, help='pattern to include in the name')
+    parser.add_argument('-e', dest='extension', default=None, help='Exact extension to match')
+    parser.add_argument('-a', dest='arch', default=None, help='Assume architecture known by user')
     parser.add_argument('-l', dest='length', default=None, type=int, help='Name length \
                          to include (e.g. 64 for a SHA256 since it is 32 bytes stored in hex digits)')
     parser.add_argument('-v', dest='verbose', default=False, action='store_true'

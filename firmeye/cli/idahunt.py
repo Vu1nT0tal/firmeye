@@ -1,17 +1,4 @@
-#!/usr/bin/python3
-#
-# This file is part of idahunt.
-# Copyright (c) 2017, Aaron Adams <aaron.adams(at)nccgroup(dot)trust>
-# Copyright (c) 2017, Cedric Halbronn <cedric.halbronn(at)nccgroup(dot)trust>
-#
-# Script to automatically analyse lots of files with IDA Pro, rename
-# functions/globals/etc. in several IDBs, open several IDBs or
-# hunt for what you want in several IDBs using an IDA Python script.
-#
-# Tested under windows and linux.
-#
-# IDA command line switches:
-# https://www.hex-rays.com/products/ida/support/idadoc/417.shtml
+# -*- coding: utf-8 -*-
 
 import argparse
 import os
@@ -20,7 +7,6 @@ import sys
 import subprocess
 import time
 import glob
-import filelock
 import struct
 
 def logmsg(s, end=None, debug=True):
@@ -34,9 +20,11 @@ def logmsg(s, end=None, debug=True):
     else:
         print(s)
 
-# https://gist.github.com/polyvertex/b6d337fec7011a0f9292
 def iglob_hidden(*args, **kwargs):
-    """A glob.iglob that include dot files and hidden files"""
+    """
+    A glob.iglob that include dot files and hidden files
+    https://gist.github.com/polyvertex/b6d337fec7011a0f9292
+    """
     old_ishidden = glob._ishidden
     glob._ishidden = lambda x: False
     try:
@@ -47,8 +35,11 @@ def iglob_hidden(*args, **kwargs):
 def path_to_module_string(p):
     return p.replace("/", ".").replace("\\", ".")
 
-# Automatically detects the architecture for PE files
 def detect_arch_pe_files(filename):
+    """
+    自动检测 PE 文件的体系结构
+    """
+
     IMAGE_FILE_MACHINE_I386 = 0x014c
     IMAGE_FILE_MACHINE_IA64 = 0x0200
     IMAGE_FILE_MACHINE_AMD64 = 0x8664
@@ -73,7 +64,7 @@ def detect_arch_pe_files(filename):
         else:
             arch = None
             logmsg("Unknown architecture detected for %s. Ignoring" % filename)
-        f.close()
+    f.close()
     return arch
 
 # Does the initial auto-analysis when we first open a file in IDA
@@ -87,7 +78,7 @@ def analyse_file(ida_executable, infile, logfile, idbfile, verbose, ida_args=Non
         logmsg("Skipping existing id0 %s. Close IDB first." % (infile + ".id0"), debug=verbose)
         return False
     logmsg("Analysing %s" % infile)
-    # We use -o below to gracefully handle symlinks
+    # 使用 -o 处理符号链接
     if ida_args:
         cmd = [ida_executable, "-B", "-o%s" % idbfile, "-L%s"% logfile] + ida_args + [infile]
     else:
@@ -176,8 +167,11 @@ def exec_ida_python_script(ida_executable, infile, logfile, idbfile, verbose, id
     else:
         return True
 
-# Useful if IDB failed to close correctly. Do not use if IDA Pro is still opened!
 def delete_temporary_files(inputdir, list_only=False):
+    """
+    清理 IDB 的临时文件
+    """
+
     for f in iglob_hidden("%s/**" % inputdir, recursive=True):
         if f.endswith(".id0") or f.endswith(".id1") or f.endswith(".id2") or \
            f.endswith(".nam") or f.endswith(".til") or f.endswith(".dmp"):
@@ -186,6 +180,10 @@ def delete_temporary_files(inputdir, list_only=False):
                 os.remove(f)
 
 def delete_asm_files(inputdir, list_only=False):
+    """
+    清理 .asm 文件
+    """
+
     for f in iglob_hidden("%s/**" % inputdir, recursive=True):
         if f.endswith(".asm"):
             logmsg("Deleting %s" % f)
@@ -249,7 +247,7 @@ def do_dir(inputdir, filter, verbose, max_ida, do_file, ida_args=None, script=No
         if max_ida == None or len(pids) < max_ida:
             continue
 
-        # Wait for all the IDA instances to complete
+        # 等待所有的 IDA 实例运行完成
         while (len(pids) != 0):
             for p in pids:
                 if p[0].poll() != None:
@@ -262,7 +260,7 @@ def do_dir(inputdir, filter, verbose, max_ida, do_file, ida_args=None, script=No
             time.sleep(2)
         logmsg("\nContinuing")
 
-    # Wait for all remaining IDA instances to complete
+    # 等待所有剩余的 IDA 实例运行完成
     while (len(pids) != 0):
         for p in pids:
             if p[0].poll() != None:
@@ -278,7 +276,6 @@ def do_dir(inputdir, filter, verbose, max_ida, do_file, ida_args=None, script=No
     else:
         logmsg("Executed IDA %d/%d times" % (exec_count, call_count))
 
-# https://arcpy.wordpress.com/2012/04/20/146/
 def hms_string(sec_elapsed):
     h = int(sec_elapsed / (60 * 60))
     m = int((sec_elapsed % (60 * 60)) / 60)
@@ -300,12 +297,10 @@ if __name__ == "__main__":
     parser.add_argument('--scripts', dest='scripts', nargs="+", default=None,
                         help='List of IDA Python scripts to execute in this order')
     parser.add_argument('--filter', dest='filter', default="filters/default.py",
-                        help='External python script with optional arguments \
-                        defining a filter for the names of the files to \
-                        analyse. See filters/names.py for example')
+                        help='External python script with optional arguments defining a filter \
+                        for the names of the files to analyse. See filters/names.py for example')
     parser.add_argument('--cleanup', dest='cleanup', default=False,
-                        action='store_true', help='Cleanup i.e. remove .asm \
-                        files that we don\'t need')
+                        action='store_true', help='Cleanup i.e. remove .asm files that we don\'t need')
     parser.add_argument('--temp-cleanup', dest='cleanup_temporary',
                         default=False, action='store_true', help='Cleanup \
                         temporary database files i.e. remove .id0, .id1, .id2, \
@@ -317,8 +312,7 @@ if __name__ == "__main__":
     parser.add_argument('--list-only', dest='list_only', default=False, action="store_true",
                         help='List only what files would be handled without executing IDA')
     parser.add_argument('--version', dest='ida_version', default="7.5",
-                        help='Override IDA version (e.g. "7.5"). This is used to find the path \
-                        of IDA on Windows.')
+                        help='Override IDA version (e.g. "7.5"). This is used to find the path of IDA on Windows.')
     args = parser.parse_args()
 
     if not args.analyse and not args.cleanup_temporary and \
@@ -344,16 +338,13 @@ if __name__ == "__main__":
                 pass
             if not ida32_found:
                 try:
-                    # IDA 7 switched binary names
                     IDA32 = subprocess.check_output("which ida", shell=True).rstrip(b'\n').decode('utf-8')
                     ida32_found = True
                 except subprocess.CalledProcessError:
                     pass
         else:
-            #IDA32="C:\\Program Files (x86)\\IDA 6.95\\idaq.exe"
             #IDA32="C:\\Program Files\\IDA " + ida_version + "\\ida.exe"
             IDA32="C:\\Program Files\\IDA Pro " + ida_version + "\\ida.exe"
-            # XXX - Test the file exists here... We shouldn't rely on a version
             ida32_found = True
 
     ida64_found = False
@@ -369,21 +360,17 @@ if __name__ == "__main__":
                 pass
             if not ida64_found:
                 try:
-                    # IDA 7 switched binary names
                     IDA64 = subprocess.check_output("which ida64", shell=True).rstrip(b'\n').decode('utf-8')
                     ida64_found = True
                 except subprocess.CalledProcessError:
                     pass
         else:
-            #IDA64="C:\\Program Files (x86)\\IDA 6.95\\idaq64.exe"
             #IDA64="C:\\Program Files\\IDA " + ida_version + "\\ida64.exe"
             IDA64="C:\\Program Files\\IDA Pro " + ida_version + "\\ida64.exe"
-            # XXX - Test the file exists here... We shouldn't rely on a version
             ida64_found = True
 
     if not ida32_found or not ida64_found:
-        logmsg("You don't seem to have 32-bit and 64-bit ida installed? If you do specify the \
-                path in IDA32 and IDA64 environment variables, since we can't find them.")
+        logmsg("You don't seem to have 32-bit and 64-bit ida installed? We can't find them.")
         sys.exit(1)
 
     if args.verbose:
@@ -399,8 +386,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # NOTE: The order here is important. We do it this way so that you could do
-    # clean the dir, create idbs, rename all the idbs, and then update a
-    # database all in one run
+    # clean the dir, create idbs, rename all the idbs, and then update a database all in one run
 
     if args.list_only and (not args.analyse and not args.scripts and not args.cleanup and not args.cleanup_temporary and args.open == None):
         logmsg("ERROR: You must use --cleanup, --analyse or --scripts with --list-only")
@@ -410,8 +396,7 @@ if __name__ == "__main__":
 
     ida_args = None
     if args.ida_args:
-        # lstrip() to allow having a space as first character (to avoid Python to parse our
-        # IDA arguments)
+        # lstrip() to allow having a space as first character (to avoid Python to parse our IDA arguments)
         ida_args = args.ida_args.lstrip().split()
 
     if args.cleanup_temporary:

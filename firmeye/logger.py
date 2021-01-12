@@ -3,9 +3,13 @@
 import os
 import time
 from functools import wraps
-import idaapi
+
+import ida_nalt
+import ida_kernwin
+
 from firmeye.config import DEBUG
-from firmeye.utility import str_gbk_to_utf8, str_utf8_to_gbk
+from firmeye.helper import str_gbk_to_utf8, str_utf8_to_gbk
+
 
 class FirmEyeLogger():
     """
@@ -35,7 +39,7 @@ class FirmEyeLogger():
         def wrapper(*args, **kwargs):
             if cls.get_dbg_mode():
                 cur_workpath_t = str_gbk_to_utf8(os.getcwd())
-                log_filename_t = '%s.xdbg' % idaapi.get_input_file_path().split('\\')[-1]
+                log_filename_t = '%s.xdbg' % ida_nalt.get_input_file_path().split('\\')[-1]
                 log_filepath_t = os.path.join(cur_workpath_t, log_filename_t)
                 cls.__log_path = str_utf8_to_gbk(log_filepath_t)
                 if cls.__log_fd:
@@ -80,9 +84,9 @@ class FirmEyeLogger():
                 cls.__log_fd.write(msg_t)
                 cls.__log_fd.flush()
         
-        idaapi.msg(msg_t)
+        ida_kernwin.msg(msg_t)
         if level == 'warn' or level == 'erro':
-            idaapi.warning(msg_t)
+            ida_kernwin.warning(msg_t)
 
     @classmethod
     def console(cls, msg, debug=False):

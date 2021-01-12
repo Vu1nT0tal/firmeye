@@ -1,25 +1,25 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
 
 import re
 
-import idc
-import idaapi
+import ida_bytes
+import ida_kernwin
 
 from firmeye.logger import FirmEyeLogger
 
 
-class CustViewer(idaapi.simplecustviewer_t):
+class CustViewer(ida_kernwin.simplecustviewer_t):
     """
     分析结果窗口显示器
     """
 
     def __init__(self, ea):
-        super(CustViewer, self).__init__()
+        ida_kernwin.simplecustviewer_t.__init__(self)
         self.ea = ea
 
     def jump_in_disassembly(self):
         ea = self.ea
-        if not ea or not idaapi.is_loaded(ea):
+        if not ea or not ida_bytes.is_loaded(ea):
             FirmEyeLogger.warn("地址错误")
             return
 
@@ -32,12 +32,12 @@ class CustViewer(idaapi.simplecustviewer_t):
 
     def jump_in_new_window(self):
         ea = self.ea
-        if not ea or not idaapi.is_loaded(ea):
+        if not ea or not ida_bytes.is_loaded(ea):
             FirmEyeLogger.warn("地址错误")
             return
 
         window_name = "D-0x%x" % ea
-        widget = idaapi.open_disasm_window(window_name)
+        widget = ida_kernwin.open_disasm_window(window_name)
         if widget:
             self.jumpto_in_view(widget, ea)
         else:
@@ -45,7 +45,7 @@ class CustViewer(idaapi.simplecustviewer_t):
 
     def jump_in_hex(self):
         ea = self.ea
-        if not ea or not idaapi.is_loaded(ea):
+        if not ea or not ida_bytes.is_loaded(ea):
             FirmEyeLogger.warn("地址错误")
             return
 
@@ -58,7 +58,7 @@ class CustViewer(idaapi.simplecustviewer_t):
 
     def find_disass_view(self):
         for c in map(chr, range(65, 75)):
-            widget = idaapi.find_widget('IDA View-%s' % c)
+            widget = ida_kernwin.find_widget('IDA View-%s' % c)
             if widget:
                 return widget
             else:
@@ -67,7 +67,7 @@ class CustViewer(idaapi.simplecustviewer_t):
 
     def find_hex_view(self):
         for i in range(1, 10):
-            widget = idaapi.find_widget('Hex View-%d' % i)
+            widget = ida_kernwin.find_widget('Hex View-%d' % i)
             if widget:
                 return widget
             else:
@@ -75,6 +75,5 @@ class CustViewer(idaapi.simplecustviewer_t):
         return None
 
     def jumpto_in_view(self, view, ea):
-        idaapi.activate_widget(view, True)
-        return idaapi.jumpto(ea)
-
+        ida_kernwin.activate_widget(view, True)
+        return ida_kernwin.jumpto(ea)

@@ -1,7 +1,12 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
 
-from firmeye.utility import *
-from firmeye.analysis.static import *
+import os
+
+import ida_pro
+
+from firmeye.utility import SINK_FUNC, PRINTF, STRING, SCANF, SYSTEM, MEMORY
+from firmeye.helper import num_to_hexstr
+from firmeye.analysis.static import FirmEyeSinkFuncMgr, printf_func_analysis, str_func_analysis, scanf_func_analysis, system_func_analysis, mem_func_analysis
 
 def analysis():
     f = open('analyze_result.txt', 'w+')
@@ -52,4 +57,4 @@ def build_result(items):
 if __name__ == "__main__":
     analysis()
     if "DO_EXIT" in os.environ:
-        idc.qexit(1)
+        ida_pro.qexit(1)

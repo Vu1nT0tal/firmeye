@@ -1,14 +1,22 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
 
 import os
 import csv
 import random
 
 import idc
-import idaapi
 import idautils
+import ida_kernwin
+import ida_nalt
+import ida_dbg
+import ida_ua
+import ida_funcs
+import ida_bytes
+import ida_idaapi
 
-from firmeye.utility import *
+from firmeye.config import SINK_FUNC, STRING, SCANF, SYSTEM, PRINTF, MEMORY
+from firmeye.utility import FirmEyeArgsTracer, FirmEyeStrMgr, FirmEyeSinkFuncMgr
+from firmeye.helper import str_gbk_to_utf8, num_to_hexstr
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
 from firmeye.logger import FirmEyeLogger
 
@@ -36,7 +44,7 @@ def printf_func_analysis(func_name, xref_list):
         FirmEyeLogger.info("从%s回溯格式字符串%s" % (num_to_hexstr(xref_addr_t), fmt_reg))
         tracer = FirmEyeArgsTracer(xref_addr_t, fmt_reg)
         source_addr = tracer.run()
-        print 'source_addr: ', source_addr
+        print('source_addr: ', source_addr)
         # 判断是否找到字符串来源地址
         if source_addr == []:
             FirmEyeLogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
@@ -66,14 +74,14 @@ def printf_func_analysis(func_name, xref_list):
                                     FirmEyeLogger.info("从%s回溯字符串%s" % (num_to_hexstr(xref_addr_t), str_reg))
                                     str_tracer = FirmEyeArgsTracer(xref_addr_t, str_reg, max_node=256)
                                     str_source_addr = str_tracer.run()
-                                    print 'str_source_addr: ', str_source_addr
+                                    print('str_source_addr: ', str_source_addr)
                                     if str_source_addr == []:
                                         FirmEyeLogger.info("未找到%s字符串地址" % str_reg)
                                         vuln_flag = 1
                                         break
                                     else:
                                         for str_addr in str_source_addr:
-                                            if idc.get_operand_type(str_addr, 1) == idaapi.o_mem:
+                                            if idc.get_operand_type(str_addr, 1) == ida_ua.o_mem:
                                                 vuln_flag = 0
                                             else:
                                                 vuln_flag = 1
@@ -118,7 +126,7 @@ def printf_func_analysis(func_name, xref_list):
                 FirmEyeLogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
                 siz_tracer = FirmEyeArgsTracer(xref_addr_t, siz_reg, max_node=256)
                 siz_source_addr = siz_tracer.run()
-                print 'siz_source_addr: ', siz_source_addr
+                print('siz_source_addr: ', siz_source_addr)
                 # 判断是否找到size的地址
                 if siz_source_addr == []:
                     FirmEyeLogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
@@ -126,7 +134,7 @@ def printf_func_analysis(func_name, xref_list):
                 else:
                     for siz_addr_t in siz_source_addr:
                         # 判断size是否为立即数
-                        if idc.get_operand_type(siz_addr_t, 1) != idaapi.o_imm:
+                        if idc.get_operand_type(siz_addr_t, 1) != ida_ua.o_imm:
                             check_fmt_reg(xref_addr_t, fmt_reg, args_rule, siz_addr_t)
                         else:
                             num = idc.print_operand(siz_addr_t, 1)
@@ -165,7 +173,7 @@ def str_func_analysis(func_name, xref_list):
         FirmEyeLogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), src_reg))
         src_tracer = FirmEyeArgsTracer(xref_addr_t, src_reg)
         src_source_addr = src_tracer.run()
-        print 'src_source_addr: ', src_source_addr
+        print('src_source_addr: ', src_source_addr)
         # 判断是否找到字符串来源地址
         if src_source_addr == []:
             FirmEyeLogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
@@ -181,7 +189,7 @@ def str_func_analysis(func_name, xref_list):
                 else:
                     # 判断来源地址是否为内存
                     str1 = src_str[0]
-                    if idc.get_operand_type(src_addr, 1) != idaapi.o_mem:
+                    if idc.get_operand_type(src_addr, 1) != ida_ua.o_mem:
                         vuln_flag = 1
                     else:
                         vuln_flag = 0
@@ -206,7 +214,7 @@ def str_func_analysis(func_name, xref_list):
             FirmEyeLogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
             siz_tracer = FirmEyeArgsTracer(xref_addr_t, siz_reg, max_node=256)
             siz_source_addr = siz_tracer.run()
-            print 'siz_source_addr: ', siz_source_addr
+            print('siz_source_addr: ', siz_source_addr)
             # 判断是否找到size的地址
             if siz_source_addr == []:
                 FirmEyeLogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
@@ -215,7 +223,7 @@ def str_func_analysis(func_name, xref_list):
             else:
                 for siz_addr_t in siz_source_addr:
                     # 判断size是否为立即数
-                    if idc.get_operand_type(siz_addr_t, 1) != idaapi.o_mem:
+                    if idc.get_operand_type(siz_addr_t, 1) != ida_ua.o_mem:
                         check_src_reg(xref_addr_t, src_reg, siz_addr_t)
                     else:
                         num = idc.print_operand(siz_addr_t, 1)
@@ -257,7 +265,7 @@ def system_func_analysis(func_name, xref_list):
         FirmEyeLogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), vuln_reg))
         tracer = FirmEyeArgsTracer(xref_addr_t, vuln_reg)
         source_addr = tracer.run()
-        print 'source_addr: ', source_addr
+        print('source_addr: ', source_addr)
         # 判断是否找到目标地址
         if source_addr == []:
             FirmEyeLogger.info("目标地址未找到%s" % num_to_hexstr(xref_addr_t))
@@ -266,7 +274,7 @@ def system_func_analysis(func_name, xref_list):
             for cmd_addr in source_addr:
                 addr1 = cmd_addr
                 # 判断字符串是否来自内存
-                if idc.get_operand_type(cmd_addr, 1) == idaapi.o_mem:
+                if idc.get_operand_type(cmd_addr, 1) == ida_ua.o_mem:
                     cmd_str = FirmEyeStrMgr.get_mem_string(cmd_addr)
                     # 判断是否找到字符串
                     if cmd_str == []:
@@ -284,7 +292,7 @@ def system_func_analysis(func_name, xref_list):
     return items
 
 
-class FirmEyeStaticForm(idaapi.Form):
+class FirmEyeStaticForm(ida_kernwin.Form):
     """
     静态分析窗口
     """
@@ -295,7 +303,7 @@ class FirmEyeStaticForm(idaapi.Form):
     tmp_func_dict = {}
 
     def __init__(self):
-        super(FirmEyeStaticForm, self).__init__("""STARTITEM 0
+        ida_kernwin.Form.__init__(self, """STARTITEM 0
 Firmeye Static Analyzer
 危险函数地址:
 <##查看:{btn_get_sink_func_addr}>
@@ -314,36 +322,36 @@ Firmeye Static Analyzer
 导出/导入离线断点:
 <##导出:{btn_export_all_bpt_addr}><##导入:{btn_import_all_bpt_addr}>
 """, {
-    'btn_get_sink_func_addr': idaapi.Form.ButtonInput(self.btn_get_sink_func_addr),
+    'btn_get_sink_func_addr': ida_kernwin.Form.ButtonInput(self.btn_get_sink_func_addr),
 
-    'btn_get_all_sink_func_xref': idaapi.Form.ButtonInput(self.btn_get_all_sink_func_xref),
-    'btn_get_one_sink_func_xref': idaapi.Form.ButtonInput(self.btn_get_one_sink_func_xref),
-    'btn_get_all_vuln_func': idaapi.Form.ButtonInput(self.btn_get_all_vuln_func),
-    'btn_get_one_vuln_func': idaapi.Form.ButtonInput(self.btn_get_one_vuln_func),
+    'btn_get_all_sink_func_xref': ida_kernwin.Form.ButtonInput(self.btn_get_all_sink_func_xref),
+    'btn_get_one_sink_func_xref': ida_kernwin.Form.ButtonInput(self.btn_get_one_sink_func_xref),
+    'btn_get_all_vuln_func': ida_kernwin.Form.ButtonInput(self.btn_get_all_vuln_func),
+    'btn_get_one_vuln_func': ida_kernwin.Form.ButtonInput(self.btn_get_one_vuln_func),
 
-    'btn_add_all_xref_bpt': idaapi.Form.ButtonInput(self.btn_add_all_xref_bpt),
-    'btn_del_all_xref_bpt': idaapi.Form.ButtonInput(self.btn_del_all_xref_bpt),
-    'btn_add_one_xref_bpt': idaapi.Form.ButtonInput(self.btn_add_one_xref_bpt),
-    'btn_del_one_xref_bpt': idaapi.Form.ButtonInput(self.btn_del_one_xref_bpt),
-    'btn_add_all_vuln_bpt': idaapi.Form.ButtonInput(self.btn_add_all_vuln_bpt),
-    'btn_del_all_vuln_bpt': idaapi.Form.ButtonInput(self.btn_del_all_vuln_bpt),
-    'btn_add_one_vuln_bpt': idaapi.Form.ButtonInput(self.btn_add_one_vuln_bpt),
-    'btn_del_one_vuln_bpt': idaapi.Form.ButtonInput(self.btn_del_one_vuln_bpt),
-    'btn_add_tmp_func_bpt': idaapi.Form.ButtonInput(self.btn_add_tmp_func_bpt),
-    'btn_del_tmp_func_bpt': idaapi.Form.ButtonInput(self.btn_del_tmp_func_bpt),
-    'btn_add_tmp_func_info': idaapi.Form.ButtonInput(self.btn_add_tmp_func_info),
-    'btn_add_next_inst_bpt': idaapi.Form.ButtonInput(self.btn_add_next_inst_bpt),
-    'btn_add_next_and_del_inst_bpt': idaapi.Form.ButtonInput(self.btn_add_next_and_del_inst_bpt),
-    'btn_export_all_bpt_addr': idaapi.Form.ButtonInput(self.btn_export_all_bpt_addr),
-    'btn_import_all_bpt_addr': idaapi.Form.ButtonInput(self.btn_import_all_bpt_addr),
+    'btn_add_all_xref_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_all_xref_bpt),
+    'btn_del_all_xref_bpt': ida_kernwin.Form.ButtonInput(self.btn_del_all_xref_bpt),
+    'btn_add_one_xref_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_one_xref_bpt),
+    'btn_del_one_xref_bpt': ida_kernwin.Form.ButtonInput(self.btn_del_one_xref_bpt),
+    'btn_add_all_vuln_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_all_vuln_bpt),
+    'btn_del_all_vuln_bpt': ida_kernwin.Form.ButtonInput(self.btn_del_all_vuln_bpt),
+    'btn_add_one_vuln_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_one_vuln_bpt),
+    'btn_del_one_vuln_bpt': ida_kernwin.Form.ButtonInput(self.btn_del_one_vuln_bpt),
+    'btn_add_tmp_func_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_tmp_func_bpt),
+    'btn_del_tmp_func_bpt': ida_kernwin.Form.ButtonInput(self.btn_del_tmp_func_bpt),
+    'btn_add_tmp_func_info': ida_kernwin.Form.ButtonInput(self.btn_add_tmp_func_info),
+    'btn_add_next_inst_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_next_inst_bpt),
+    'btn_add_next_and_del_inst_bpt': ida_kernwin.Form.ButtonInput(self.btn_add_next_and_del_inst_bpt),
+    'btn_export_all_bpt_addr': ida_kernwin.Form.ButtonInput(self.btn_export_all_bpt_addr),
+    'btn_import_all_bpt_addr': ida_kernwin.Form.ButtonInput(self.btn_import_all_bpt_addr),
 })
 
     def add_or_del_all_xref_bpt(self, is_add):
         if is_add == True:
-            action = idc.add_bpt
+            action = ida_dbg.add_bpt
             act_info = '添加'
         else:
-            action = idc.del_bpt
+            action = ida_dbg.del_bpt
             act_info = '删除'
         
         if self.sink_func_xref_dict == {}:
@@ -352,11 +360,11 @@ Firmeye Static Analyzer
                 tmp_list = []
                 for xref_addr_t in xref_list:
                     tmp_list.append(xref_addr_t)
-                    action(xref_addr_t)
+                    action(xref_addr_t, 0, idc.BPT_DEFAULT)
                 self.sink_func_xref_dict[func_name] = tmp_list
         else:
             for xref_addr_t in reduce(lambda x, y: x+y, self.sink_func_xref_dict.values()):
-                action(xref_addr_t)
+                action(xref_addr_t, 0, idc.BPT_DEFAULT)
         FirmEyeLogger.info('已%s断点：危险函数调用地址（全部）' % act_info)
     
     def btn_add_all_xref_bpt(self, code=0):
@@ -369,13 +377,13 @@ Firmeye Static Analyzer
     
     def add_or_del_one_xref_bpt(self, is_add):
         if is_add == True:
-            action = idc.add_bpt
+            action = ida_dbg.add_bpt
             act_info = '添加'
         else:
-            action = idc.del_bpt
+            action = ida_dbg.del_bpt
             act_info = '删除'
         
-        tgt_t = idaapi.ask_str('', 0, '请输入危险函数名')
+        tgt_t = ida_kernwin.ask_str('', 0, '请输入危险函数名')
         if SINK_FUNC.has_key(tgt_t):
             if not self.sink_func_xref_dict.has_key(tgt_t):
                 mgr_t = FirmEyeSinkFuncMgr()
@@ -410,20 +418,20 @@ Firmeye Static Analyzer
         self.add_fast_dict_from_all_vuln_func()
 
         for xref_addr_t in reduce(lambda x, y: x + y, self.vuln_func_fast_dict.values()):
-            idc.add_bpt(xref_addr_t)
+            ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
         
         FirmEyeLogger.info('已添加断点：危险函数漏洞分析（全部）')
     
     def btn_del_all_vuln_bpt(self, code=0):
         """删除断点 所有危险函数漏洞地址"""
         for xref_addr_t in reduce(lambda x, y: x + y, self.vuln_func_fast_dict.values()):
-            idc.del_bpt(xref_addr_t)
+            ida_dbg.del_bpt(xref_addr_t)
 
         FirmEyeLogger.info('已删除断点：危险函数漏洞分析（全部）')
 
     def btn_add_one_vuln_bpt(self, code=0):
         """添加断点 某个危险函数漏洞地址"""
-        tgt_t = idaapi.ask_str('', 0, '请输入危险函数名')
+        tgt_t = ida_kernwin.ask_str('', 0, '请输入危险函数名')
         if SINK_FUNC.has_key(tgt_t):
             if not self.vuln_func_fast_dict.has_key(tgt_t):
                 mgr_t = FirmEyeSinkFuncMgr()
@@ -454,7 +462,7 @@ Firmeye Static Analyzer
 
             if self.vuln_func_fast_dict.has_key(tgt_t):
                 for xref_addr_t in self.vuln_func_fast_dict[tgt_t]:
-                    idc.add_bpt(xref_addr_t)
+                    ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
             
             FirmEyeLogger.info('已添加断点：危险函数漏洞分析（%s）' % tgt_t)
         else:
@@ -462,11 +470,11 @@ Firmeye Static Analyzer
 
     def btn_del_one_vuln_bpt(self, code=0):
         """删除断点 某个危险函数漏洞地址"""
-        tgt_t = idaapi.ask_str('', 0, '请输入危险函数名')
+        tgt_t = ida_kernwin.ask_str('', 0, '请输入危险函数名')
         if SINK_FUNC.has_key(tgt_t):
             if self.vuln_func_fast_dict.has_key(tgt_t):
                 for xref_addr_t in self.vuln_func_fast_dict[tgt_t]:
-                    idc.del_bpt(xref_addr_t)
+                    ida_dbg.del_bpt(xref_addr_t)
             FirmEyeLogger.info("已删除断点：危险函数漏洞分析（%s）" % tgt_t)
         else:
             FirmEyeLogger.warn("未支持函数")
@@ -477,7 +485,7 @@ Firmeye Static Analyzer
         info_only: 在添加函数信息的同时是否添加断点
         """
 
-        input_str = idaapi.ask_text(0, '', "请输入任意函数名/函数地址，及各参数类型（none, int, str），可输入多行\n例如：\nstrcmp str str")
+        input_str = ida_kernwin.ask_text(0, '', "请输入任意函数名/函数地址，及各参数类型（none, int, str），可输入多行\n例如：\nstrcmp str str")
         try:
             rules = [x.strip() for x in input_str.strip().split('\n')]
             for rule in rules:
@@ -491,17 +499,17 @@ Firmeye Static Analyzer
                         CUSTOM_FUNC[addr_hexstr] = {'args_rule': args_rule}
                         self.tmp_func_dict[addr_hexstr] = [addr_t]
                         if info_only == False:
-                            idc.add_bpt(addr_t)
+                            ida_dbg.add_bpt(addr_t, 0, idc.BPT_DEFAULT)
                     else:
                         for func_addr_t in idautils.Functions():
-                            func_name_t = idaapi.get_func_name(func_addr_t)
+                            func_name_t = ida_funcs.get_func_name(func_addr_t)
                             if func_name_t == tgt_t:
                                 CUSTOM_FUNC[func_name_t] = {'args_rule': args_rule}
                                 self.tmp_func_dict[func_name_t] = []
                                 for xref_addr_t in idautils.CodeRefsTo(func_addr_t, 0):
                                     self.tmp_func_dict[func_name_t].append(xref_addr_t)
                                     if info_only == False:
-                                        idc.add_bpt(xref_addr_t)
+                                        ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
                                     else:
                                         continue
                                 break
@@ -511,7 +519,7 @@ Firmeye Static Analyzer
                     CUSTOM_FUNC[tgt_t] = {'args_rule': args_rule}
                     for xref_addr_t in self.tmp_func_dict[tgt_t]:
                         if info_only == False:
-                            idc.add_bpt(xref_addr_t)
+                            ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
                         else:
                             continue
                 FirmEyeLogger.info("已添加断点：%s" % rule)
@@ -524,11 +532,11 @@ Firmeye Static Analyzer
     
     def btn_del_tmp_func_bpt(self, code=0):
         """删除临时函数断点"""
-        tgt_t = idaapi.ask_str('', 0, '请输入任意函数名')
+        tgt_t = ida_kernwin.ask_str('', 0, '请输入任意函数名')
         try:
             if self.tmp_func_dict.has_key(tgt_t):
                 for xref_addr_t in self.tmp_func_dict[tgt_t]:
-                    idc.del_bpt(xref_addr_t)
+                    ida_dbg.del_bpt(xref_addr_t)
                 CUSTOM_FUNC.pop(tgt_t)
             FirmEyeLogger.info("已删除断点：指定函数调用地址 %s" % tgt_t)
         except Exception:
@@ -543,10 +551,10 @@ Firmeye Static Analyzer
         获取所有断点的地址列表
         """
         bpt_list = []
-        bpt_num = idaapi.get_bpt_qty()
-        bpt_t = idaapi.bpt_t()
+        bpt_num = ida_dbg.get_bpt_qty()
+        bpt_t = ida_dbg.bpt_t()
         for i in range(bpt_num):
-            if idaapi.getn_bpt(i, bpt_t) == True:
+            if ida_dbg.getn_bpt(i, bpt_t) == True:
                 bpt_list.append(bpt_t.ea)
             else:
                 FirmEyeLogger.info("获取断点失败 %d" % i)
@@ -558,7 +566,7 @@ Firmeye Static Analyzer
         """
         bpt_list = self.get_all_bpt_list()
         for bpt in bpt_list:
-            idc.add_bpt(idc.next_head(bpt))
+            ida_dbg.add_bpt(ida_bytes.next_head(bpt, ida_idaapi.BADADDR), 0, idc.BPT_DEFAULT)
         
     def btn_add_next_and_del_inst_bpt(self, code=0):
         """
@@ -566,15 +574,15 @@ Firmeye Static Analyzer
         """
         bpt_list = self.get_all_bpt_list()
         for bpt in bpt_list:
-            idc.add_bpt(idc.next_head(bpt))
-            idaapi.del_bpt(bpt)
+            ida_dbg.add_bpt(ida_bytes.next_head(bpt, ida_idaapi.BADADDR), 0, idc.BPT_DEFAULT)
+            ida_dbg.del_bpt(bpt)
     
     def btn_export_all_bpt_addr(self, code=0):
         """
         导出离线断点
         """
         cur_workpath_t = os.getcwd()
-        csv_filepath_t = os.path.join(cur_workpath_t, '%s_bpt.csv' % idaapi.get_root_filename())
+        csv_filepath_t = os.path.join(cur_workpath_t, '%s_bpt.csv' % ida_nalt.get_root_filename())
 
         bpt_list = self.get_all_bpt_list()
         bpt_list = [[format(bpt, '#010x')[2:]] for bpt in bpt_list]
@@ -592,14 +600,14 @@ Firmeye Static Analyzer
         导入离线断点
         """
         cur_workpath_t = os.getcwd()
-        csv_filepath_t = os.path.join(cur_workpath_t, '%s_bpt.csv' % idaapi.get_root_filename())
+        csv_filepath_t = os.path.join(cur_workpath_t, '%s_bpt.csv' % ida_nalt.get_root_filename())
 
         if os.path.exists(csv_filepath_t):
             with open(csv_filepath_t, 'rb') as f:
                 next(f)
                 reader = csv.reader(f)
                 for row in reader:
-                    idc.add_bpt(int(row[0], 16))
+                    ida_dbg.add_bpt(int(row[0], 16), 0, idc.BPT_DEFAULT)
             FirmEyeLogger.info("导入断点完成：%s" % str_gbk_to_utf8(csv_filepath_t))
         else:
             FirmEyeLogger.warn("文件不存在：%s" % str_gbk_to_utf8(csv_filepath_t))
@@ -608,9 +616,9 @@ Firmeye Static Analyzer
         """
         查看危险函数地址列表
         """
-        cols = [['', 0 | idaapi.Choose.CHCOL_DEC],
-                ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                ['函数地址', 10 | idaapi.Choose.CHCOL_HEX]]
+        cols = [['', 0 | ida_kernwin.Choose.CHCOL_DEC],
+                ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX]]
         items = []
 
         mgr_t = FirmEyeSinkFuncMgr()
@@ -626,9 +634,9 @@ Firmeye Static Analyzer
         查看所有危险函数调用地址
         """
 
-        cols = [['', 0 | idaapi.Choose.CHCOL_DEC],
-                ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                ['函数地址', 10 | idaapi.Choose.CHCOL_HEX]]
+        cols = [['', 0 | ida_kernwin.Choose.CHCOL_DEC],
+                ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX]]
         items = []
 
         mgr_t = FirmEyeSinkFuncMgr()
@@ -648,11 +656,11 @@ Firmeye Static Analyzer
         查看某个危险函数调用地址
         """
 
-        tgt_t = idaapi.ask_str('', 0, '请输入要查看的危险函数名')
+        tgt_t = ida_kernwin.ask_str('', 0, '请输入要查看的危险函数名')
         if SINK_FUNC.has_key(tgt_t):
-            cols = [['', 0 | idaapi.Choose.CHCOL_DEC],
-                ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                ['函数地址', 10 | idaapi.Choose.CHCOL_HEX]]
+            cols = [['', 0 | ida_kernwin.Choose.CHCOL_DEC],
+                ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX]]
             items = []
 
             mgr_t = FirmEyeSinkFuncMgr()
@@ -694,8 +702,8 @@ Firmeye Static Analyzer
         for func_name, xref_list in mgr_t.gen_sink_func_xref():
             if not self.vuln_func_fast_dict.has_key(func_name):
                 tag = SINK_FUNC[func_name]['tag']
-                print 'func_name: ', func_name
-                print 'xref_list: ', len(xref_list)
+                print('func_name: ', func_name)
+                print('xref_list: ', len(xref_list))
                 if tag == PRINTF:
                     items = printf_func_analysis(func_name, xref_list)
                     self.add_fast_dict_from_items(items)
@@ -722,7 +730,7 @@ Firmeye Static Analyzer
     
     def btn_get_one_vuln_func(self, code=0):
         """查看某个危险函数漏洞地址"""
-        tgt_t = idaapi.ask_str('', 0, '请输入要查看的危险函数名')
+        tgt_t = ida_kernwin.ask_str('', 0, '请输入要查看的危险函数名')
         if SINK_FUNC.has_key(tgt_t):
             mgr_t = FirmEyeSinkFuncMgr()
             xref_list = mgr_t.get_one_func_xref(tgt_t)
@@ -736,12 +744,12 @@ Firmeye Static Analyzer
             if tag == PRINTF:
                 items = printf_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
-                cols = [['可疑', 3 | idaapi.Choose.CHCOL_DEC],
-                        ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                        ['函数地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['格式字符串地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['格式字符串', 15 | idaapi.Choose.CHCOL_PLAIN],
-                        ['长度', 10 | idaapi.Choose.CHCOL_HEX]]
+                cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
+                        ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['格式字符串地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['格式字符串', 15 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['长度', 10 | ida_kernwin.Choose.CHCOL_HEX]]
                 chooser = AnalysisChooser(title='危险函数漏洞分析', cols=cols, item=items)
                 chooser.Show()
             
@@ -749,12 +757,12 @@ Firmeye Static Analyzer
             elif tag == STRING:
                 items = str_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
-                cols = [['可疑', 3 | idaapi.Choose.CHCOL_DEC],
-                        ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                        ['函数地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['来源地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['字符串', 15 | idaapi.Choose.CHCOL_PLAIN],
-                        ['字符串长度', 10 | idaapi.Choose.CHCOL_HEX]]
+                cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
+                        ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['来源地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['字符串', 15 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['字符串长度', 10 | ida_kernwin.Choose.CHCOL_HEX]]
                 chooser = AnalysisChooser(title='危险函数漏洞分析', cols=cols, item=items)
                 chooser.Show()
 
@@ -762,12 +770,12 @@ Firmeye Static Analyzer
             elif tag == SCANF:
                 items = scanf_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
-                cols = [['可疑', 3 | idaapi.Choose.CHCOL_DEC],
-                        ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                        ['函数地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['格式字符串地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['格式字符串', 15 | idaapi.Choose.CHCOL_PLAIN],
-                        ['长度', 10 | idaapi.Choose.CHCOL_HEX]]
+                cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
+                        ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['格式字符串地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['格式字符串', 15 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['长度', 10 | ida_kernwin.Choose.CHCOL_HEX]]
                 chooser = AnalysisChooser(title='危险函数漏洞分析', cols=cols, item=items)
                 chooser.Show()
 
@@ -775,11 +783,11 @@ Firmeye Static Analyzer
             elif tag == SYSTEM:
                 items = system_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
-                cols = [['可疑', 3 | idaapi.Choose.CHCOL_DEC],
-                        ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                        ['函数地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['来源地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['命令语句', 15 | idaapi.Choose.CHCOL_PLAIN]]
+                cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
+                        ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['来源地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['命令语句', 15 | ida_kernwin.Choose.CHCOL_PLAIN]]
                 chooser = AnalysisChooser(title='危险函数漏洞分析', cols=cols, item=items)
                 chooser.Show()
 
@@ -787,12 +795,12 @@ Firmeye Static Analyzer
             elif tag == MEMORY:
                 items = mem_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
-                cols = [['可疑', 3 | idaapi.Choose.CHCOL_DEC],
-                        ['函数名', 10 | idaapi.Choose.CHCOL_PLAIN],
-                        ['函数地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['来源地址', 10 | idaapi.Choose.CHCOL_HEX],
-                        ['', 0 | idaapi.Choose.CHCOL_PLAIN],
-                        ['字符串长度', 10 | idaapi.Choose.CHCOL_HEX]]
+                cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
+                        ['函数名', 10 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['来源地址', 10 | ida_kernwin.Choose.CHCOL_HEX],
+                        ['', 0 | ida_kernwin.Choose.CHCOL_PLAIN],
+                        ['字符串长度', 10 | ida_kernwin.Choose.CHCOL_HEX]]
                 chooser = AnalysisChooser(title='危险函数漏洞分析', cols=cols, item=items)
                 chooser.Show()
             else:
@@ -801,23 +809,22 @@ Firmeye Static Analyzer
             FirmEyeLogger.warn("未支持函数")
 
 
-class FirmEyeStaticAnalyzer(idaapi.action_handler_t):
+class FirmEyeStaticAnalyzer(ida_kernwin.action_handler_t):
     """
     静态分析器
     """
 
     def __init__(self):
-        super(FirmEyeStaticAnalyzer, self).__init__()
+        ida_kernwin.action_handler_t.__init__(self)
 
     def show_menu(self):
         main = FirmEyeStaticForm()
         main.Compile()
         main.Execute()
-    
+
     @FirmEyeLogger.reload
     def activate(self, ctx):
         self.show_menu()
-    
-    def update(self, ctx):
-        return idaapi.AST_ENABLE_ALWAYS
 
+    def update(self, ctx):
+        return ida_kernwin.AST_ENABLE_ALWAYS

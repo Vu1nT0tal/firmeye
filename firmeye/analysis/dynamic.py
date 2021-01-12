@@ -1,31 +1,36 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
 
 import time
 
 import idc
-import idaapi
+import ida_dbg
+import ida_idd
+import ida_kernwin
+import ida_bytes
+import ida_funcs
 import idautils
 
 from firmeye.regs import arm_regset
-from firmeye.utility import FirmEyeStrMgr, num_to_hexstr, SINK_FUNC, is_func_call
+from firmeye.utility import FirmEyeStrMgr, SINK_FUNC
+from firmeye.helper import num_to_hexstr, is_func_call
 from firmeye.logger import FirmEyeLogger
 from firmeye.analysis.static import get_custom_func
 
 
-class FirmEyeDbgHook(idaapi.DBG_Hooks):
+class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
     """
     调试器Hook类
     """
 
     def __init__(self):
-        super(FirmEyeDbgHook, self).__init__()
+        ida_dbg.DBG_Hooks.__init__(self)
 
         self.__break_point_hit_count = {}       # 断点触发次数
         self.__break_func_hit_count = {}        # 断点所在函数触发次数
 
         self.__firmeye_reg_val = {}             # 保存寄存器的值
         for reg in arm_regset.args + (arm_regset.stack, ):
-            self.__firmeye_reg_val[reg] = idaapi.regval_t()
+            self.__firmeye_reg_val[reg] = ida_idd.regval_t()
 
         self.step_dbg = False
     
@@ -50,7 +55,7 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
         获取寄存器的值
         """
         for reg_t in self.__firmeye_reg_val:
-            idaapi.get_reg_val(reg_t, self.__firmeye_reg_val[reg_t])
+            ida_dbg.get_reg_val(reg_t, self.__firmeye_reg_val[reg_t])
         
         return self.__firmeye_reg_val
     
@@ -135,7 +140,7 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
 
                 run_info[arm_regset.stack] = []
                 for kdx in range(stack_num):
-                    stack_v = idc.get_wide_dword(sp_addr)
+                    stack_v = ida_bytes.get_wide_dword(sp_addr)
                     if 's' in fmt_list[jdx+kdx+1]:
                         if stack_v == 0:
                             str_t = ''
@@ -189,8 +194,8 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
         runtime_info = {}
         args = self.get_xdbg_reg_var()
 
-        rv = idaapi.regval_t()
-        idaapi.get_reg_val('PC', rv)
+        rv = ida_idd.regval_t()
+        ida_dbg.get_reg_val('PC', rv)
         FirmEyeLogger.console('PC: %s' % num_to_hexstr(rv.ival))
 
         # 判断是否包含变长参数
@@ -213,8 +218,8 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
         runtime_info = {}
         args = self.get_xdbg_reg_var()
 
-        rv = idaapi.regval_t()
-        idaapi.get_reg_val('PC', rv)
+        rv = ida_idd.regval_t()
+        ida_dbg.get_reg_val('PC', rv)
         FirmEyeLogger.console('PC: %s' % num_to_hexstr(rv.ival))
 
         arg_v = args[arm_regset.ret].ival
@@ -239,7 +244,7 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
             if args_rule == False:
                 FirmEyeLogger.console('临时断点%s' % num_to_hexstr(ea))
             else:
-                up_func_name_t = idc.get_func_name(ea)
+                up_func_name_t = ida_funcs.get_func_name(ea)
                 func_hit_count = self.inc_break_func_hit_count(up_func_name_t)
 
                 FirmEyeLogger.console(func_name_t + ' - ' + up_func_name_t + '-'*60)
@@ -247,19 +252,19 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
                                         (tid, time.time(), point_hit_count, func_hit_count))
                 FirmEyeLogger.console(('%s - before' + '-'*30) % func_name_t)
 
-                idaapi.refresh_debugger_memory()
+                ida_dbg.refresh_debugger_memory()
                 before_info = self.get_before_run_info(args_rule)
 
-        elif is_func_call(idc.prev_head(ea)):
+        elif is_func_call(ida_bytes.prev_head(ea, 0)):
             # 如果当前地址的上一条地址是函数调用（即调用后）
 
-            func_ea = idc.prev_head(ea)
+            func_ea = ida_bytes.prev_head(ea, 0)
             func_name = idc.print_operand(func_ea, 0)
             args_rule = self.get_args_rule(func_name, func_ea)
 
             FirmEyeLogger.console(('%s - after ' + '-'*30) % func_name)
 
-            # idaapi.refresh_debugger_memory()
+            # ida_dbg.refresh_debugger_memory()
             after_info = self.get_after_run_info(args_rule)
 
         else:
@@ -267,12 +272,12 @@ class FirmEyeDbgHook(idaapi.DBG_Hooks):
         
         # 是否单步调试
         if self.step_dbg == False:
-            idaapi.continue_process()
+            ida_dbg.continue_process()
 
         return 0
 
 
-class FirmEyeDynamicAnalyzer(idaapi.action_handler_t):
+class FirmEyeDynamicAnalyzer(ida_kernwin.action_handler_t):
     """
     动态分析器
     """
@@ -280,15 +285,15 @@ class FirmEyeDynamicAnalyzer(idaapi.action_handler_t):
     __xdbg_hook_status = False
 
     def __init__(self):
-        super(FirmEyeDynamicAnalyzer, self).__init__()
+        ida_kernwin.action_handler_t.__init__(self)
         self.firmeye_dbg_hook = FirmEyeDbgHook()
-    
+
     def get_xdbg_hook_status(self):
         return self.__xdbg_hook_status
-    
+
     def set_xdbg_hook_status(self):
         self.__xdbg_hook_status = not self.__xdbg_hook_status
-    
+
     @FirmEyeLogger.reload
     def activate(self, ctx):
         if self.get_xdbg_hook_status():
@@ -297,14 +302,13 @@ class FirmEyeDynamicAnalyzer(idaapi.action_handler_t):
         else:
             FirmEyeLogger.info('启用调试事件记录')
 
-            if idaapi.ask_yn(0, '是否单步调试？') == 1:
+            if ida_kernwin.ask_yn(0, '是否单步调试？') == 1:
                 self.firmeye_dbg_hook.step_dbg = True
             else:
                 self.firmeye_dbg_hook.step_dbg = False
             self.firmeye_dbg_hook.hook()
-        
-        self.set_xdbg_hook_status()
-    
-    def update(self, ctx):
-        return idaapi.AST_ENABLE_ALWAYS
 
+        self.set_xdbg_hook_status()
+
+    def update(self, ctx):
+        return ida_kernwin.AST_ENABLE_ALWAYS

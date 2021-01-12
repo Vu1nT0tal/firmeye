@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
 
 PLUGIN_NAME = "Firmeye"
 PLUGIN_HOTKEY = "Ctrl+F1"

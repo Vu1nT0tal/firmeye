@@ -1,37 +1,20 @@
-# -*- coding: utf-8 -*-  
-
-# IDA: utf8, Windows: gbk
-def str_gbk_to_utf8(s):
-    return s.decode('gbk').encode('utf-8')
-
-def str_utf8_to_gbk(s):
-    return s.decode('utf-8').encode('gbk')
-
-def num_to_hexstr(num):
-    return format(num, '#010x')
+# -*- coding: utf-8 -*-
 
 import re
 import idc
-import idaapi
+import ida_bytes
+import ida_ua
+import ida_funcs
+import ida_nalt
+import ida_gdl
+import ida_xref
+import ida_segment
+import ida_idaapi
 import idautils
 
-from firmeye.config import *
-from firmeye.logger import *
-
-
-def is_func_call(ea):
-    """
-    判读是否是一个函数调用指令
-    """
-
-    op1 = idc.print_operand(ea, 0)
-    for func_addr in idautils.Functions():
-        func_name = idaapi.get_func_name(func_addr)
-        if op1 == func_name:
-            return True
-        else:
-            continue
-    return False
+from firmeye.config import SINK_FUNC, INST_LIST
+from firmeye.logger import FirmEyeLogger
+from firmeye.helper import num_to_hexstr
 
 
 class FirmEyeSinkFuncMgr():
@@ -45,7 +28,7 @@ class FirmEyeSinkFuncMgr():
     
     def gen_sink_func_addr(self):
         for func_addr in idautils.Functions():
-            func_name = idaapi.get_func_name(func_addr)
+            func_name = ida_funcs.get_func_name(func_addr)
             if self.sink_func_info.has_key(func_name):
                 yield (func_name, func_addr)
             else:
@@ -53,7 +36,7 @@ class FirmEyeSinkFuncMgr():
     
     def gen_func_xref(self, func_addr):
         for xref_addr in idautils.CodeRefsTo(func_addr, 0):
-            if idaapi.get_func(xref_addr):
+            if ida_funcs.get_func(xref_addr):
                 yield xref_addr
             else:
                 continue
@@ -67,7 +50,7 @@ class FirmEyeSinkFuncMgr():
     
     def get_one_func_xref(self, func_name):
         for func_addr in idautils.Functions():
-            func_name_t = idaapi.get_func_name(func_addr)
+            func_name_t = ida_funcs.get_func_name(func_addr)
             if func_name == func_name_t:
                 return self.get_func_xref(func_addr)
             else:
@@ -96,9 +79,9 @@ class FirmEyeArgsTracer():
         """
         初始化基本块CFG
         """
-        func_t = idaapi.get_func(self.trace_addr)
+        func_t = ida_funcs.get_func(self.trace_addr)
         if func_t:
-            self.cfg = idaapi.FlowChart(func_t)
+            self.cfg = ida_gdl.FlowChart(func_t)
         else:
             self.cfg = []
 
@@ -181,7 +164,7 @@ class FirmEyeArgsTracer():
         reg_t = reg
         addr_t = addr
 
-        mnemonic_t = idc.print_insn_mnem(addr_t)
+        mnemonic_t = ida_ua.print_insn_mnem(addr_t)
         line = idc.generate_disasm_line(addr_t, 0)
         if reg_t == 'R0' and mnemonic_t.startswith('BLX') and addr_t != self.trace_addr:
             FirmEyeLogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
@@ -208,8 +191,8 @@ class FirmEyeArgsTracer():
                         # 回溯R0    ADD R0, R1; ADD R0, #10
                         # 回溯R1    ADD R0, R1, #10; ADD R0, R1, R2
                         op2_tmp = idc.print_operand(addr_t, 1)
-                        if idc.get_operand_type(addr_t, 2) == idaapi.o_void:
-                            if idc.get_operand_type(addr_t, 1) == idaapi.o_reg:
+                        if idc.get_operand_type(addr_t, 2) == ida_ua.o_void:
+                            if idc.get_operand_type(addr_t, 1) == ida_ua.o_reg:
                                 if op2_tmp == 'SP':
                                     FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                     return None
@@ -217,7 +200,7 @@ class FirmEyeArgsTracer():
                                     FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                             else:
                                 FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
-                        elif idc.get_operand_type(addr_t, 3) == idaapi.o_void:
+                        elif idc.get_operand_type(addr_t, 3) == ida_ua.o_void:
                             op3_tmp = idc.print_operand(addr_t, 2)
                             if op2_tmp == 'SP' or op3_tmp == 'SP':
                                 FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
@@ -250,11 +233,11 @@ class FirmEyeArgsTracer():
                             reg_t = op3_tmp
                             FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                         else:
-                            op2_tmp = idc.print_operand(addr_t, 1)
+                            op2_tmp = ida_ua.print_operand(addr_t, 1)
                             if op2_tmp == 'SP':
                                 FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
-                            elif idc.get_operand_type(addr_t, 1) == idaapi.o_reg:
+                            elif idc.get_operand_type(addr_t, 1) == ida_ua.o_reg:
                                 reg_t = op2_tmp
                                 FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                             elif mnemonic_t in ['MOVT.W', 'MOVTGT.W', 'MOVTLE.W']:
@@ -267,7 +250,7 @@ class FirmEyeArgsTracer():
                         # 停止      LDR R0, [SP, #10]
                         # 回溯R1    LDR R0, [R1, #10]
                         # 回溯R0    LDR R0, [R0, R1, #10]
-                        if idc.get_operand_type(addr_t, 1) == idaapi.o_mem:
+                        if idc.get_operand_type(addr_t, 1) == ida_ua.o_mem:
                             FirmEyeLogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
                             return None
                         else:
@@ -294,10 +277,10 @@ class FirmEyeArgsTracer():
         获取所有引用到addr的地址
         """
         xref_t = []
-        addr_t = idaapi.get_first_cref_to(addr)
-        while addr_t != idaapi.BADADDR:
+        addr_t = ida_xref.get_first_cref_to(addr)
+        while addr_t != ida_idaapi.BADADDR:
             xref_t.append(addr_t)
-            addr_t = idaapi.get_next_cref_to(addr, addr_t)
+            addr_t = ida_xref.get_next_cref_to(addr, addr_t)
         return xref_t
     
     def get_node_nums(self):
@@ -310,13 +293,13 @@ class FirmEyeArgsTracer():
         """
         设置指令背景色
         """
-        idaapi.set_item_color(addr, color_type)
+        ida_nalt.set_item_color(addr, color_type)
     
     def trace_handle(self, addr, reg):
         """
         处理回溯事件
         """
-        next_addr = idc.prev_head(addr)
+        next_addr = ida_bytes.prev_head(addr, 0)
         next_reg = self.get_next_reg(addr, reg)
 
         return (next_addr, next_reg)
@@ -330,7 +313,7 @@ class FirmEyeArgsTracer():
         while reg_t and cur_t >= blk.startEA:
             cur_t, reg_t = self.trace_handle(cur_t, reg_t)
 
-        return (idc.next_head(cur_t), reg_t)
+        return (ida_bytes.next_head(cur_t, ida_idaapi.BADADDR), reg_t)
 
     def trace_next(self, blk, node, reg):
         """
@@ -395,10 +378,10 @@ class FirmEyeStrMgr():
         """
 
         string = ''
-        chr_t = idc.get_wide_byte(addr)
+        chr_t = ida_bytes.get_wide_byte(addr)
         i = 0
         while chr_t != 0:
-            chr_t = idc.get_wide_byte(addr+i)
+            chr_t = ida_bytes.get_wide_byte(addr+i)
             string += chr(chr_t)
             i += 1
         return string[:-1]
@@ -426,7 +409,8 @@ class FirmEyeStrMgr():
             strs = []
             dref = idautils.DataRefsFrom(addr_t)
             for x in dref:
-                if idc.get_segm_name(x) not in ['.text', '.bss']:
+                segname = ida_segment.get_segm_name(ida_segment.getseg(x))
+                if segname not in ['.text', '.bss']:
                     strs.append(cls.get_string_from_mem(x))
         
         # LDR R1, =(aFailedToGetAnI+0x22)
@@ -435,24 +419,25 @@ class FirmEyeStrMgr():
         if strs == []:
             dref = idautils.DataRefsFrom(addr_t)
             for x in dref:
-                if idc.get_segm_name(x) not in ['.text', '.bss']:
+                segname = ida_segment.get_segm_name(ida_segment.getseg(x))
+                if segname not in ['.text', '.bss']:
                     strs.append(cls.get_string_from_mem(x))
                 elif len(list(idautils.DataRefsFrom(x))) == 0:
                     reg_t = idc.print_operand(addr_t, 0)
-                    num1 = idc.get_wide_dword(x)
-                    while idc.print_insn_mnem(addr_t) != 'ADD' or (idc.print_operand(addr_t, 0) != reg_t and idc.print_operand(addr_t, 1) != 'PC'):
-                        addr_t = idc.next_head(addr_t)
+                    num1 = ida_bytes.get_wide_dword(x)
+                    while ida_ua.print_insn_mnem(addr_t) != 'ADD' or (idc.print_operand(addr_t, 0) != reg_t and idc.print_operand(addr_t, 1) != 'PC'):
+                        addr_t = ida_bytes.next_head(addr_t, ida_idaapi.BADADDR)
                     num2 = addr_t + 8
                     addr_t = num1 + num2
                     strs.append(cls.get_string_from_mem(addr_t))
         
         # MOVW R1, #0x87B4
         # MOVT.W R1, #0x52
-        if strs == [] and idc.print_insn_mnem(addr_t) == 'MOVW':
+        if strs == [] and ida_ua.print_insn_mnem(addr_t) == 'MOVW':
             reg_t = idc.print_operand(addr_t, 0)
             num1 = int(idc.print_operand(addr_t, 1).split('#')[1], 16)
-            while idc.print_insn_mnem(addr_t) not in ['MOVTGT.W', 'MOVTLE.W', 'MOVT.W'] or idc.print_operand(addr_t, 0) != reg_t:
-                addr_t = idc.next_head(addr_t)
+            while ida_ua.print_insn_mnem(addr_t) not in ['MOVTGT.W', 'MOVTLE.W', 'MOVT.W'] or idc.print_operand(addr_t, 0) != reg_t:
+                addr_t = ida_bytes.next_head(addr_t, ida_idaapi.BADADDR)
             num2 = int(idc.print_operand(addr_t, 1).split('#')[1], 16)
             addr_t = (num2<<16) + num1
             strs.append(cls.get_string_from_mem(addr_t))

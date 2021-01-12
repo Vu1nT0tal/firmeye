@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
 
-import idaapi
+import ida_kernwin
+
 from firmeye.view.custviewer import CustViewer
-from firmeye.utility import num_to_hexstr
+from firmeye.helper import num_to_hexstr
 
 
 class AnalysisChooseData():
@@ -20,13 +21,13 @@ class AnalysisChooseData():
         self.other1 = other1
 
 
-class AnalysisChooser(idaapi.Choose):
+class AnalysisChooser(ida_kernwin.Choose):
     """
     分析结果窗口选择器
     """
     def __init__(self, title, cols, item):
-        super(AnalysisChooser, self).__init__(
-            title=title, cols=cols, flags=idaapi.Choose.CH_QFLT | idaapi.Choose.CH_NOIDB
+        ida_kernwin.Choose.__init__(self,
+            title=title, cols=cols, flags=ida_kernwin.Choose.CH_QFLT | ida_kernwin.Choose.CH_NOIDB
         )
         self.build_items(item)
 
@@ -55,10 +56,9 @@ class AnalysisChooser(idaapi.Choose):
         data = self.items[n]
         viewer = CustViewer(data.ea)
         viewer.jump_in_disassembly()
-        return (idaapi.Choose.NOTHING_CHANGED, )
+        return (ida_kernwin.Choose.NOTHING_CHANGED, )
 
     def build_items(self, items):
         self.items = []
         for item in items:
             self.items.append(item)
-
