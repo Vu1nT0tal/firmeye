@@ -8,7 +8,6 @@ import ida_nalt
 import ida_kernwin
 
 from firmeye.config import DEBUG
-from firmeye.helper import str_gbk_to_utf8, str_utf8_to_gbk
 
 
 class FirmEyeLogger():
@@ -38,10 +37,10 @@ class FirmEyeLogger():
         @wraps(func)
         def wrapper(*args, **kwargs):
             if cls.get_dbg_mode():
-                cur_workpath_t = str_gbk_to_utf8(os.getcwd())
+                cur_workpath_t = os.getcwd()
                 log_filename_t = '%s.xdbg' % ida_nalt.get_input_file_path().split('\\')[-1]
                 log_filepath_t = os.path.join(cur_workpath_t, log_filename_t)
-                cls.__log_path = str_utf8_to_gbk(log_filepath_t)
+                cls.__log_path = log_filepath_t
                 if cls.__log_fd:
                     cls.__log_fd.close()
                     cls.__log_fd = None
@@ -53,10 +52,10 @@ class FirmEyeLogger():
     def log_time(cls, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            s_time = time.clock()
+            s_time = time.process_time()
             ret_t = func(*args, **kwargs)
-            e_time = time.clock()
-            if not cls.__time_cost.has_key(func.__name__):
+            e_time = time.process_time()
+            if not func.__name__ in cls.__time_cost:
                 cls.__time_cost[func.__name__] = 0
             cls.__time_cost[func.__name__] += e_time - s_time
             return ret_t
@@ -78,12 +77,12 @@ class FirmEyeLogger():
             msg_t = '%s\n' % msg
         else:
             msg_t = '[%s] %s\n' % (level, msg)
-        
+
         if cls.__log_fd:
             if cls.__enable_dbg or debug:
                 cls.__log_fd.write(msg_t)
                 cls.__log_fd.flush()
-        
+
         ida_kernwin.msg(msg_t)
         if level == 'warn' or level == 'erro':
             ida_kernwin.warning(msg_t)

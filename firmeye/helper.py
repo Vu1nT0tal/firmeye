@@ -11,13 +11,6 @@ import idautils
 import idc
 
 
-# IDA: utf8, Windows: gbk
-def str_gbk_to_utf8(s):
-    return s.decode('gbk').encode('utf-8')
-
-def str_utf8_to_gbk(s):
-    return s.decode('utf-8').encode('gbk')
-
 def num_to_hexstr(num):
     return format(num, '#010x')
 
@@ -94,7 +87,6 @@ def addr_to_name(ea):
         print("Error: addr_to_name: Failed to find '0x%x' address" % ea)
         return ""
     return name
-
 
 def get_call_args_arm(ea, count_max=10):
     """

@@ -27,7 +27,7 @@ class AnalysisChooser(ida_kernwin.Choose):
     """
     def __init__(self, title, cols, item):
         ida_kernwin.Choose.__init__(self,
-            title=title, cols=cols, flags=ida_kernwin.Choose.CH_QFLT | ida_kernwin.Choose.CH_NOIDB
+            title=title, cols=cols, flags=(ida_kernwin.Choose.CH_QFLT | ida_kernwin.Choose.CH_NOIDB)
         )
         self.build_items(item)
 
@@ -43,7 +43,7 @@ class AnalysisChooser(ida_kernwin.Choose):
                 data.append(num_to_hexstr(x))
             else:
                 continue
-        
+
         for x in [d.str1, d.str2, d.other1]:
             if x != None:
                 data.append(x)

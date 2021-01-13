@@ -33,44 +33,44 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
             self.__firmeye_reg_val[reg] = ida_idd.regval_t()
 
         self.step_dbg = False
-    
+
     def inc_break_func_hit_count(self, func_name):
-        if not self.__break_func_hit_count.has_key(func_name):
+        if not func_name in self.__break_func_hit_count:
             self.__break_func_hit_count[func_name] = 0
-    
+
         self.__break_func_hit_count[func_name] += 1
 
         return self.__break_func_hit_count[func_name]
-    
+
     def inc_break_point_hit_count(self, addr):
-        if not self.__break_point_hit_count.has_key(addr):
+        if not addr in self.__break_point_hit_count:
             self.__break_point_hit_count[addr] = 0
-    
+
         self.__break_point_hit_count[addr] += 1
 
         return self.__break_point_hit_count[addr]
-    
+
     def get_xdbg_reg_var(self):
         """
         获取寄存器的值
         """
         for reg_t in self.__firmeye_reg_val:
             ida_dbg.get_reg_val(reg_t, self.__firmeye_reg_val[reg_t])
-        
+
         return self.__firmeye_reg_val
-    
+
     def get_args_rule(self, func_name, ea):
-        ANY_FUNC = get_custom_func()
-        if SINK_FUNC.has_key(func_name):
+        CUSTOM_FUNC = get_custom_func()
+        if func_name in SINK_FUNC:
             args_rule = SINK_FUNC[func_name]['args_rule']
-        elif ANY_FUNC.has_key(func_name):
-            args_rule = ANY_FUNC[func_name]['args_rule']
-        elif ANY_FUNC.has_key(num_to_hexstr(ea)):
-            args_rule = ANY_FUNC[num_to_hexstr(ea)]['args_rule']
+        elif func_name in CUSTOM_FUNC:
+            args_rule = CUSTOM_FUNC[func_name]['args_rule']
+        elif num_to_hexstr(ea) in CUSTOM_FUNC:
+            args_rule = CUSTOM_FUNC[num_to_hexstr(ea)]['args_rule']
         else:
             args_rule = False
         return args_rule
-    
+
     def var_len_args_run_info(self, args_rule, args):
         """
         获取变长参数函数的寄存器信息
@@ -183,7 +183,7 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
             else:
                 run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
                 FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
-        
+
         return run_info
 
     def get_before_run_info(self, args_rule):
@@ -206,9 +206,9 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
             runtime_info = self.var_len_args_run_info(args_rule, args)
         else:
             runtime_info = self.fix_len_args_run_info(args_rule, args)
-        
+
         return runtime_info
-    
+
     def get_after_run_info(self, args_rule):
         """
         获取某函数执行后的返回值
@@ -269,7 +269,7 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
 
         else:
             FirmEyeLogger.console('临时断点%s' % num_to_hexstr(ea))
-        
+
         # 是否单步调试
         if self.step_dbg == False:
             ida_dbg.continue_process()

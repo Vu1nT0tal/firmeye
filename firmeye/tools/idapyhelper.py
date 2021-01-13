@@ -84,7 +84,7 @@ class PyHelperChooser(ida_kernwin.Choose):
         self.build_items()
 
     def build_items(self):
-        pydir = ida_diskio.idadir("python3")
+        pydir = ida_diskio.idadir(os.path.join("python", "3"))
         for mod_name in os.listdir(pydir):
             if mod_name.endswith(".py"):
                 mod_name, _ = os.path.splitext(mod_name)

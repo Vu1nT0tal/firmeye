@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import re
+from functools import reduce
+
 import idc
 import ida_bytes
 import ida_ua
@@ -25,29 +27,29 @@ class FirmEyeSinkFuncMgr():
 
     def __init__(self, sink_func_info=SINK_FUNC):
         self.sink_func_info = sink_func_info
-    
+
     def gen_sink_func_addr(self):
         for func_addr in idautils.Functions():
             func_name = ida_funcs.get_func_name(func_addr)
-            if self.sink_func_info.has_key(func_name):
+            if func_name in self.sink_func_info:
                 yield (func_name, func_addr)
             else:
                 continue
-    
+
     def gen_func_xref(self, func_addr):
         for xref_addr in idautils.CodeRefsTo(func_addr, 0):
             if ida_funcs.get_func(xref_addr):
                 yield xref_addr
             else:
                 continue
-    
+
     def get_func_xref(self, func_addr):
         return [xref_addr for xref_addr in self.gen_func_xref(func_addr)]
-    
+
     def gen_sink_func_xref(self):
         for func_name, func_addr in self.gen_sink_func_addr():
             yield (func_name, self.get_func_xref(func_addr))
-    
+
     def get_one_func_xref(self, func_name):
         for func_addr in idautils.Functions():
             func_name_t = ida_funcs.get_func_name(func_addr)
@@ -90,10 +92,10 @@ class FirmEyeArgsTracer():
         获取addr所在的基本块
         """
         for blk in self.cfg:
-            if blk.startEA <= addr and addr < blk.endEA:
+            if blk.start_ea <= addr and addr < blk.end_ea:
                 return blk
         return None
-    
+
     def create_tree_node(self, addr, prev=None):
         """
         创建树节点
@@ -102,24 +104,24 @@ class FirmEyeArgsTracer():
             'addr': addr,
             'prev': prev,
         }
-    
+
     def init_tree(self):
         """
         初始化回溯树
         """
         self.tree = self.create_tree_node(self.trace_addr)
-    
+
     def push_cache_node(self, addr, key):
         """
         将节点地址添加到缓存列表
         """
-        if self.cache.has_key(key):
+        if key in self.cache:
             self.cache['all_node'].add(addr)
             if addr not in self.cache[key]:
                 self.cache[key].add(addr)
                 return True
         return False
-    
+
     def init_cache(self):
         """
         初始化缓存列表，记录回溯过程中经过的节点地址
@@ -127,7 +129,7 @@ class FirmEyeArgsTracer():
         self.cache = {'addr': set(), 'all_node': set()}
         for r in ['R'+str(i) for i in range(16)]:
             self.cache.update({r: set()})
-    
+
     def parse_operands(self, mnem, tar_addr):
         """
         提取块拷贝指令（LDM/STM）涉及的寄存器
@@ -282,19 +284,19 @@ class FirmEyeArgsTracer():
             xref_t.append(addr_t)
             addr_t = ida_xref.get_next_cref_to(addr, addr_t)
         return xref_t
-    
+
     def get_node_nums(self):
         """
         获取已回溯节点数
         """
         return len(self.cache['all_node'])
-    
+
     def set_color(self, addr, color_type):
         """
         设置指令背景色
         """
         ida_nalt.set_item_color(addr, color_type)
-    
+
     def trace_handle(self, addr, reg):
         """
         处理回溯事件
@@ -310,7 +312,7 @@ class FirmEyeArgsTracer():
         """
         reg_t = reg
         cur_t = node['addr']
-        while reg_t and cur_t >= blk.startEA:
+        while reg_t and cur_t >= blk.start_ea:
             cur_t, reg_t = self.trace_handle(cur_t, reg_t)
 
         return (ida_bytes.next_head(cur_t, ida_idaapi.BADADDR), reg_t)
@@ -319,13 +321,13 @@ class FirmEyeArgsTracer():
         """
         下一轮回溯
         """
-        for ref_addr in self.get_all_ref(blk.startEA):
+        for ref_addr in self.get_all_ref(blk.start_ea):
             block = self.get_blk(ref_addr)
             if block:
                 FirmEyeLogger.info("基本块跳转\t"+num_to_hexstr(ref_addr)+"\t"+idc.generate_disasm_line(ref_addr, 0))
                 node_t = self.create_tree_node(ref_addr, prev=node)
                 self.dfs(node_t, reg, block)
-    
+
     def dfs(self, node, reg, blk):
         """深度优先搜索
         node: 当前节点
@@ -345,7 +347,7 @@ class FirmEyeArgsTracer():
                 FirmEyeLogger.info("该块已经回溯，取消操作")
         else:
             FirmEyeLogger.info("超出最大回溯块数量")
-    
+
     @FirmEyeLogger.show_time_cost
     @FirmEyeLogger.log_time
     def run(self):
@@ -370,7 +372,7 @@ class FirmEyeStrMgr():
         st_obj.setup(minlen=minl)
         for string in st_obj:
             self.strings[string.ea] = str(string)
-    
+
     @classmethod
     def get_string_from_mem(cls, addr):
         """
@@ -394,14 +396,14 @@ class FirmEyeStrMgr():
 
         addr_t = addr
         dref = idautils.DataRefsFrom(addr_t)
-        strs = [cls.strings[x] for x in dref if cls.strings.has_key(x)]
+        strs = [cls.strings[x] for x in dref if x in cls.strings]
 
         # 处理几种特殊情况
         # LDR R1, =sub_xxxx
         # LDR R1, =loc_xxxx
         if idc.print_operand(addr, 1)[:5] in ['=sub_', '=loc_']:
             return []
-        
+
         # LDR R1, =unk_53B4B6
         # .rodata:0053B4B6 http:
         # .rodata:0053B4BB //%s%s
@@ -412,7 +414,7 @@ class FirmEyeStrMgr():
                 segname = ida_segment.get_segm_name(ida_segment.getseg(x))
                 if segname not in ['.text', '.bss']:
                     strs.append(cls.get_string_from_mem(x))
-        
+
         # LDR R1, =(aFailedToGetAnI+0x22)
         # LDR R2, =(aSS - 0xCFA4)
         # ADD R2, PC, R2
@@ -430,7 +432,7 @@ class FirmEyeStrMgr():
                     num2 = addr_t + 8
                     addr_t = num1 + num2
                     strs.append(cls.get_string_from_mem(addr_t))
-        
+
         # MOVW R1, #0x87B4
         # MOVT.W R1, #0x52
         if strs == [] and ida_ua.print_insn_mnem(addr_t) == 'MOVW':
@@ -441,7 +443,7 @@ class FirmEyeStrMgr():
             num2 = int(idc.print_operand(addr_t, 1).split('#')[1], 16)
             addr_t = (num2<<16) + num1
             strs.append(cls.get_string_from_mem(addr_t))
-        
+
         return strs
 
     @classmethod

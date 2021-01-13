@@ -10,7 +10,7 @@ firmeye 是一个 IDA 插件，基于敏感函数参数回溯来辅助漏洞挖�
 
 ## 安装
 
-该插件运行环境要求 IDA Pro 7.0+，Python2。
+该插件运行环境要求 IDA Pro 7.5，Python3。
 
 1. 下载本项目：`https://github.com/firmianay/firmeye.git`。
 2. 将 `firmeye` 和 `firmeye.py` 复制到 IDA Pro 插件目录下，例如 `C:\Program Files\IDA 7.0\plugins`。
@@ -53,5 +53,4 @@ $ python3 idahunt.py --inputdir C:\xxxx --filter "names.py -a 32 -v" --scripts "
 - 完善漏洞判断逻辑，降低误报率
 - 加入动态污点分析作为辅助
 - 支持更多体系架构，如 x86、MIPS 等
-- 迁移到 IDA 7.5，Python3
 

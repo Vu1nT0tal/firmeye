@@ -11,7 +11,7 @@ import ida_auto
 import ida_nalt
 import idautils
 
-from firmeye.helper import str_gbk_to_utf8, num_to_hexstr, str_utf8_to_gbk
+from firmeye.helper import num_to_hexstr
 from firmeye.logger import FirmEyeLogger
 from firmeye.tools.idapyhelper import PyHelperChooser
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
@@ -50,13 +50,13 @@ Ghidra函数列表
         导入Ghidra函数列表
         """
         ghidra_filepath_t = os.path.join(os.getcwd(), 'ghidra_func_addrs.csv')
-        ghidra_path_t = ida_kernwin.ask_str(str_gbk_to_utf8(ghidra_filepath_t), 0, '导入的Ghidra导出函数文件路径')
+        ghidra_path_t = ida_kernwin.ask_str(ghidra_filepath_t, 0, '导入的Ghidra导出函数文件路径')
 
         func_addrs = list(idautils.Functions())
         make_func_addrs = []
         if ghidra_path_t and ghidra_path_t != '':
-            if os.path.exists(str_utf8_to_gbk(ghidra_path_t)):
-                with open(str_utf8_to_gbk(ghidra_path_t), 'rb') as f:
+            if os.path.exists(ghidra_path_t):
+                with open(ghidra_path_t, 'rb') as f:
                     next(f)
                     reader = csv.reader(f)
                     for row in reader:
@@ -93,10 +93,10 @@ Ghidra函数列表
         for x in ordered_list:
             data = AnalysisChooseData(vuln=0, name=x[0], ea=x[1][0], other1=str(x[1][1]))
             items.append(data)
-        
+
         chooser = AnalysisChooser(title='函数调用次数统计', cols=cols, item=items)
         chooser.Show()
-    
+
     def btn_export_ida_to_xml(self, code=0):
         """
         导出XML到Ghidra
@@ -112,13 +112,13 @@ Ghidra函数列表
                 except Cancelled:
                     ida_kernwin.hide_wait_box()
                     FirmEyeLogger.warn("已取消XML导出")
-                except Exception:
+                except Exception as e:
                     ida_kernwin.hide_wait_box()
-                    FirmEyeLogger.warn("导出XML失败")
+                    FirmEyeLogger.warn("导出XML失败 %s" % e)
             finally:
                 xml.cleanup()
                 ida_auto.set_ida_state(st)
-        
+
         cur_workpath_t = os.getcwd()
         xml_filepath_t = os.path.join(cur_workpath_t, '%s.xml' % ida_nalt.get_input_file_path())
         bin_filepath_t = os.path.join(cur_workpath_t, '%s.bytes' % ida_nalt.get_input_file_path())
