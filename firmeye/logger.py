@@ -52,9 +52,9 @@ class FELogger():
     def log_time(cls, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            s_time = time.process_time()
+            s_time = time.perf_counter()
             ret_t = func(*args, **kwargs)
-            e_time = time.process_time()
+            e_time = time.perf_counter()
             if not func.__name__ in cls.__time_cost:
                 cls.__time_cost[func.__name__] = 0
             cls.__time_cost[func.__name__] += e_time - s_time

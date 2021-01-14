@@ -32,7 +32,7 @@ def printf_func_analysis(func_name, xref_list):
     printf系列函数漏洞分析
     """
 
-    def check_fmt_reg(xref_addr_t, fmt_reg, vuln_regs, siz_addr_t=0):
+    def check_fmt_reg(xref_addr_t, fmt_reg, vuln_regs, siz_addr_t=0, parse=False):
         vuln_flag = 0
         addr1 = 0
         str1 = ''
@@ -60,43 +60,47 @@ def printf_func_analysis(func_name, xref_list):
                     vuln_flag = 1
                     str1 = ''
                 else:
+                    FELogger.info('找到格式字符串%s' % num_to_hexstr(xref_addr_t))
                     str1 = fmt_str[0]
-                    fmt_list = FEStrMgr.parse_format_string(str1)
-                    # 判断字符串中的格式字符
-                    if fmt_list != [] and 's' in ''.join(fmt_list):
-                        if vuln_regs[-1] == '...':
-                            args_num = len(fmt_list) + len(vuln_regs) - 1
-                            if args_num > 4:
-                                fmt_list = fmt_list[:(4 - (len(vuln_regs) - 1))]
-
-                            for idx in range(len(fmt_list)):
-                                if 's' in fmt_list[idx]:
-                                    str_reg = 'R%s' % (len(vuln_regs)-1 + idx)
-                                    FELogger.info("从%s回溯字符串%s" % (num_to_hexstr(xref_addr_t), str_reg))
-                                    str_tracer = FEArgsTracer(xref_addr_t, str_reg, max_node=256)
-                                    str_source_addr = str_tracer.run()
-                                    print('str_source_addr: ', str_source_addr)
-                                    if str_source_addr == []:
-                                        FELogger.info("未找到%s字符串地址" % str_reg)
-                                        vuln_flag = 1
-                                        break
-                                    else:
-                                        for str_addr in str_source_addr:
-                                            if idc.get_operand_type(str_addr, 1) == ida_ua.o_mem:
-                                                vuln_flag = 0
-                                            else:
-                                                vuln_flag = 1
-                                                break
-                                else:
-                                    continue
-                        else:
-                            vuln_flag = 1
-                    else:
-                        FELogger.info("格式字符串不包含s转换符号")
+                    if parse == False:
                         vuln_flag = 0
+                    else:
+                        fmt_list = FEStrMgr.parse_format_string(str1)
+                        # 判断字符串中的格式字符
+                        if fmt_list != [] and 's' in ''.join(fmt_list):
+                            if vuln_regs[-1] == '...':
+                                args_num = len(fmt_list) + len(vuln_regs) - 1
+                                if args_num > 4:
+                                    fmt_list = fmt_list[:(4 - (len(vuln_regs) - 1))]
 
-            data = AnalysisChooseData(vuln=vuln_flag, name=func_name_t, ea=xref_addr_t, addr1=addr1, str1=str1, other1=str_siz_addr)
-            items.append(data)
+                                for idx in range(len(fmt_list)):
+                                    if 's' in fmt_list[idx]:
+                                        str_reg = 'R%s' % (len(vuln_regs)-1 + idx)
+                                        FELogger.info("从%s回溯字符串%s" % (num_to_hexstr(xref_addr_t), str_reg))
+                                        str_tracer = FEArgsTracer(xref_addr_t, str_reg, max_node=256)
+                                        str_source_addr = str_tracer.run()
+                                        print('str_source_addr: ', str_source_addr)
+                                        if str_source_addr == []:
+                                            FELogger.info("未找到%s字符串地址" % str_reg)
+                                            vuln_flag = 1
+                                            break
+                                        else:
+                                            for str_addr in str_source_addr:
+                                                if idc.get_operand_type(str_addr, 1) == ida_ua.o_mem:
+                                                    vuln_flag = 0
+                                                else:
+                                                    vuln_flag = 1
+                                                    break
+                                    else:
+                                        continue
+                            else:
+                                vuln_flag = 1
+                        else:
+                            FELogger.info("格式字符串不包含s转换符号")
+                            vuln_flag = 0
+
+        data = AnalysisChooseData(vuln=vuln_flag, name=func_name_t, ea=xref_addr_t, addr1=addr1, str1=str1, other1=str_siz_addr)
+        items.append(data)
 
     func_name_t = func_name
     xref_list_t = xref_list
@@ -105,44 +109,48 @@ def printf_func_analysis(func_name, xref_list):
     args_rule = SINK_FUNC[func_name_t]['args_rule']
     for xref_addr_t in xref_list_t:
         for rule in vuln_rule:
-            if rule['vuln_type'] == 'format_string':
-                continue
             FELogger.info('检测%s漏洞' % rule['vuln_type'])
-            vuln_regs = rule['vuln_regs']
-            if vuln_regs[-1] == '...':
-                fmt_reg = vuln_regs[-2]
-                if len(vuln_regs) == 3:
-                    siz_reg = vuln_regs[0]
-                else:
-                    siz_reg = None
-            else:
-                fmt_reg = vuln_regs[-1]
-                if len(vuln_regs) == 2:
-                    siz_reg = vuln_regs[0]
-                else:
-                    siz_reg = None
 
-            # 判断是否有size参数
-            if siz_reg != None:
-                FELogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
-                siz_tracer = FEArgsTracer(xref_addr_t, siz_reg, max_node=256)
-                siz_source_addr = siz_tracer.run()
-                print('siz_source_addr: ', siz_source_addr)
-                # 判断是否找到size的地址
-                if siz_source_addr == []:
-                    FELogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
-                    check_fmt_reg(xref_addr_t, fmt_reg, args_rule)
-                else:
-                    for siz_addr_t in siz_source_addr:
-                        # 判断size是否为立即数
-                        if idc.get_operand_type(siz_addr_t, 1) != ida_ua.o_imm:
-                            check_fmt_reg(xref_addr_t, fmt_reg, args_rule, siz_addr_t)
-                        else:
-                            num = idc.print_operand(siz_addr_t, 1)
-                            data = AnalysisChooseData(vuln=0, name=func_name_t, ea=xref_addr_t, addr1=siz_addr_t, str1='', other1=num)
-                            items.append(data)
+            if rule['vuln_type'] == 'format_string':
+                fmt_reg = rule['vuln_regs'][0]
+                FELogger.info("从%s回溯格式字符串%s" % (num_to_hexstr(xref_addr_t), fmt_reg))
+                check_fmt_reg(xref_addr_t, fmt_reg, args_rule, parse=False)
             else:
-                check_fmt_reg(xref_addr_t, fmt_reg, args_rule)
+                vuln_regs = rule['vuln_regs']
+                if vuln_regs[-1] == '...':
+                    fmt_reg = vuln_regs[-2]
+                    if len(vuln_regs) == 3:
+                        siz_reg = vuln_regs[0]
+                    else:
+                        siz_reg = None
+                else:
+                    fmt_reg = vuln_regs[-1]
+                    if len(vuln_regs) == 2:
+                        siz_reg = vuln_regs[0]
+                    else:
+                        siz_reg = None
+
+                # 判断是否有size参数
+                if siz_reg != None:
+                    FELogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
+                    siz_tracer = FEArgsTracer(xref_addr_t, siz_reg, max_node=256)
+                    siz_source_addr = siz_tracer.run()
+                    print('siz_source_addr: ', siz_source_addr)
+                    # 判断是否找到size的地址
+                    if siz_source_addr == []:
+                        FELogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
+                        check_fmt_reg(xref_addr_t, fmt_reg, args_rule, parse=True)
+                    else:
+                        for siz_addr_t in siz_source_addr:
+                            # 判断size是否为立即数
+                            if idc.get_operand_type(siz_addr_t, 1) != ida_ua.o_imm:
+                                check_fmt_reg(xref_addr_t, fmt_reg, args_rule, siz_addr_t, parse=True)
+                            else:
+                                num = idc.print_operand(siz_addr_t, 1)
+                                data = AnalysisChooseData(vuln=0, name=func_name_t, ea=xref_addr_t, addr1=siz_addr_t, str1='', other1=num)
+                                items.append(data)
+                else:
+                    check_fmt_reg(xref_addr_t, fmt_reg, args_rule, parse=True)
     return items
 
 def scanf_func_analysis(func_name, xref_list):
@@ -224,7 +232,7 @@ def str_func_analysis(func_name, xref_list):
             else:
                 for siz_addr_t in siz_source_addr:
                     # 判断size是否为立即数
-                    if idc.get_operand_type(siz_addr_t, 1) != ida_ua.o_mem:
+                    if idc.get_operand_type(siz_addr_t, 1) != ida_ua.o_imm:
                         check_src_reg(xref_addr_t, src_reg, siz_addr_t)
                     else:
                         num = idc.print_operand(siz_addr_t, 1)

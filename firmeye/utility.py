@@ -235,7 +235,7 @@ class FEArgsTracer():
                             reg_t = op3_tmp
                             FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                         else:
-                            op2_tmp = ida_ua.print_operand(addr_t, 1)
+                            op2_tmp = idc.print_operand(addr_t, 1)
                             if op2_tmp == 'SP':
                                 FELogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
