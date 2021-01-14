@@ -7,15 +7,17 @@ DEBUG = True    # 配置DEBUG模式
 GHIDRA_PATH = 'E:\\ghidra_9.0.4'
 GHIDRA_HEADLESS_PATH = os.path.join(GHIDRA_PATH, "support", "analyzeHeadless.bat")
 
-PRINTF = 0
-STRING = 1
-MEMORY = 2
-SCANF  = 3
-SYSTEM = 4
+FUNC_TAG = {
+    'PRINTF': 0,
+    'STRING': 1,
+    'MEMORY': 2,
+    'SCANF' : 3,
+    'SYSTEM': 4,
+}
 
 SINK_FUNC = {
     'printf': {     # int printf(const char *format, ...);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['fmt', '...'],
         'vuln_rule': [
             {
@@ -25,7 +27,7 @@ SINK_FUNC = {
         ]
     },
     'sprintf': {     # int sprintf(char *str, const char *format, ...);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['str', 'fmt', '...'],
         'vuln_rule': [
             {
@@ -39,7 +41,7 @@ SINK_FUNC = {
         ]
     },
     'snprintf': {     # int snprintf(char *str, size_t size, const char *format, ...);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['str', 'int', 'fmt', '...'],
         'vuln_rule': [
             {
@@ -53,7 +55,7 @@ SINK_FUNC = {
         ]
     },
     'fprintf': {     # int fprintf(FILE *stream, const char *format, ...);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['dword', 'fmt', '...'],
         'vuln_rule': [
             {
@@ -63,7 +65,7 @@ SINK_FUNC = {
         ]
     },
     'dprintf': {     # int dprintf(int fd, const char *format, ...);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['int', 'fmt', '...'],
         'vuln_rule': [
             {
@@ -73,7 +75,7 @@ SINK_FUNC = {
         ]
     },
     'vprintf': {     # int vprintf(const char *format, va_list ap);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -83,7 +85,7 @@ SINK_FUNC = {
         ]
     },
     'vfprintf': {     # int vfprintf(FILE *stream, const char *format, va_list ap);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['dword', 'fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -93,7 +95,7 @@ SINK_FUNC = {
         ]
     },
     'vdprintf': {     # int vdprintf(int fd, const char *format, va_list ap);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['int', 'fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -103,7 +105,7 @@ SINK_FUNC = {
         ]
     },
     'vsprintf': {     # int vsprintf(char *str, const char *format, va_list ap);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['str', 'fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -117,7 +119,7 @@ SINK_FUNC = {
         ]
     },
     'vsnprintf': {     # int vsnprintf(char *str, size_t size, const char *format, va_list ap);
-        'tag': PRINTF,
+        'tag': FUNC_TAG['PRINTF'],
         'args_rule': ['str', 'int', 'fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -132,7 +134,7 @@ SINK_FUNC = {
     },
 
     'scanf': {     # int scanf(const char *format, ...);
-        'tag': SCANF,
+        'tag': FUNC_TAG['SCANF'],
         'args_rule': ['fmt', '...'],
         'vuln_rule': [
             {
@@ -142,7 +144,7 @@ SINK_FUNC = {
         ]
     },
     'sscanf': {     # int sscanf(const char *str, const char *format, ...);
-        'tag': SCANF,
+        'tag': FUNC_TAG['SCANF'],
         'args_rule': ['str', 'fmt', '...'],
         'vuln_rule': [
             {
@@ -156,7 +158,7 @@ SINK_FUNC = {
         ]
     },
     'vscanf': {     # int vscanf(const char *format, va_list ap);
-        'tag': SCANF,
+        'tag': FUNC_TAG['SCANF'],
         'args_rule': ['fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -166,7 +168,7 @@ SINK_FUNC = {
         ]
     },
     'vsscanf': {     # int vsscanf(const char *str, const char *format, va_list ap);
-        'tag': SCANF,
+        'tag': FUNC_TAG['SCANF'],
         'args_rule': ['str', 'fmt', 'va_list'],
         'vuln_rule': [
             {
@@ -192,7 +194,7 @@ SINK_FUNC = {
     },
 
     'strtrns': {    # char *strtrns (const char *str, const char *old, const char *new, char *result);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str', 'str', 'str'],
         'vuln_rule': [
             {
@@ -202,7 +204,7 @@ SINK_FUNC = {
         ]
     },
     'strecpy': {    # char *strecpy(char *output, const char *input, const char *exceptions);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str', 'str'],
         'vuln_rule': [
             {
@@ -212,7 +214,7 @@ SINK_FUNC = {
         ]
     },
     'streadd': {    # char *streadd(char *output, const char *input, const char *exceptions);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str', 'str'],
         'vuln_rule': [
             {
@@ -222,7 +224,7 @@ SINK_FUNC = {
         ]
     },
     'strncat': {    # char *strncat(char *dest, const char *src, size_t n);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str', 'int'],
         'vuln_rule': [
             {
@@ -232,7 +234,7 @@ SINK_FUNC = {
         ]
     },
     'strcat': {    # char *strcat(char *dest, const char *src);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str'],
         'vuln_rule': [
             {
@@ -242,7 +244,7 @@ SINK_FUNC = {
         ]
     },
     'strncpy': {    # char *strncpy(char *dest, const char *src, size_t n);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str', 'int'],
         'vuln_rule': [
             {
@@ -252,7 +254,7 @@ SINK_FUNC = {
         ]
     },
     'strcpy': {    # char *strcpy(char *dest, const char *src);
-        'tag': STRING,
+        'tag': FUNC_TAG['STRING'],
         'args_rule': ['str', 'str'],
         'vuln_rule': [
             {
@@ -263,7 +265,7 @@ SINK_FUNC = {
     },
 
     'memcpy': {    # void *memcpy(void *dest, const void *src, size_t n);
-        'tag': MEMORY,
+        'tag': FUNC_TAG['MEMORY'],
         'args_rule': ['str', 'str', 'int'],
         'vuln_rule': [
             {
@@ -285,7 +287,7 @@ SINK_FUNC = {
     },
 
     'system': {    # int system(const char *command);
-        'tag': SYSTEM,
+        'tag': FUNC_TAG['SYSTEM'],
         'args_rule': ['str'],
         'vuln_rule': [
             {
@@ -296,7 +298,7 @@ SINK_FUNC = {
     },
 
     'doSystemCmd': {    # int system(const char *command);
-        'tag': SYSTEM,
+        'tag': FUNC_TAG['SYSTEM'],
         'args_rule': ['str'],
         'vuln_rule': [
             {

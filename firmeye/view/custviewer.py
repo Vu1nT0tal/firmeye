@@ -5,7 +5,7 @@ import re
 import ida_bytes
 import ida_kernwin
 
-from firmeye.logger import FirmEyeLogger
+from firmeye.logger import FELogger
 
 
 class CustViewer(ida_kernwin.simplecustviewer_t):
@@ -20,12 +20,12 @@ class CustViewer(ida_kernwin.simplecustviewer_t):
     def jump_in_disassembly(self):
         ea = self.ea
         if not ea or not ida_bytes.is_loaded(ea):
-            FirmEyeLogger.warn("地址错误")
+            FELogger.warn("地址错误")
             return
 
         widget = self.find_disass_view()
         if not widget:
-            FirmEyeLogger.warn("无法找到反汇编窗口")
+            FELogger.warn("无法找到反汇编窗口")
             return
 
         self.jumpto_in_view(widget, ea)
@@ -33,7 +33,7 @@ class CustViewer(ida_kernwin.simplecustviewer_t):
     def jump_in_new_window(self):
         ea = self.ea
         if not ea or not ida_bytes.is_loaded(ea):
-            FirmEyeLogger.warn("地址错误")
+            FELogger.warn("地址错误")
             return
 
         window_name = "D-0x%x" % ea
@@ -41,17 +41,17 @@ class CustViewer(ida_kernwin.simplecustviewer_t):
         if widget:
             self.jumpto_in_view(widget, ea)
         else:
-            FirmEyeLogger.warn("创建新窗口失败")
+            FELogger.warn("创建新窗口失败")
 
     def jump_in_hex(self):
         ea = self.ea
         if not ea or not ida_bytes.is_loaded(ea):
-            FirmEyeLogger.warn("地址错误")
+            FELogger.warn("地址错误")
             return
 
         widget = self.find_hex_view()
         if not widget:
-            FirmEyeLogger.warn("无法找到十六进制窗口")
+            FELogger.warn("无法找到十六进制窗口")
             return
 
         self.jumpto_in_view(widget, ea)

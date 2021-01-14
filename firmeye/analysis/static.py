@@ -15,11 +15,11 @@ import ida_funcs
 import ida_bytes
 import ida_idaapi
 
-from firmeye.config import SINK_FUNC, STRING, SCANF, SYSTEM, PRINTF, MEMORY
-from firmeye.utility import FirmEyeArgsTracer, FirmEyeStrMgr, FirmEyeSinkFuncMgr
+from firmeye.config import SINK_FUNC, FUNC_TAG
+from firmeye.utility import FEArgsTracer, FEStrMgr, FESinkFuncMgr
 from firmeye.helper import num_to_hexstr
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
-from firmeye.logger import FirmEyeLogger
+from firmeye.logger import FELogger
 
 CUSTOM_FUNC = {}   # 全局变量，保存用户临时定义的sink函数
 
@@ -42,26 +42,26 @@ def printf_func_analysis(func_name, xref_list):
         else:
             str_siz_addr = num_to_hexstr(siz_addr_t)
 
-        FirmEyeLogger.info("从%s回溯格式字符串%s" % (num_to_hexstr(xref_addr_t), fmt_reg))
-        tracer = FirmEyeArgsTracer(xref_addr_t, fmt_reg)
+        FELogger.info("从%s回溯格式字符串%s" % (num_to_hexstr(xref_addr_t), fmt_reg))
+        tracer = FEArgsTracer(xref_addr_t, fmt_reg)
         source_addr = tracer.run()
         print('source_addr: ', source_addr)
         # 判断是否找到字符串来源地址
         if source_addr == []:
-            FirmEyeLogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
+            FELogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
             vuln_flag = 1
         else:
             for fmt_addr in source_addr:
                 addr1 = fmt_addr
-                fmt_str = FirmEyeStrMgr.get_mem_string(fmt_addr)
+                fmt_str = FEStrMgr.get_mem_string(fmt_addr)
                 # 判断是否找到字符串
                 if fmt_str == []:
-                    FirmEyeLogger.info('格式字符串未找到%s' % num_to_hexstr(xref_addr_t))
+                    FELogger.info('格式字符串未找到%s' % num_to_hexstr(xref_addr_t))
                     vuln_flag = 1
                     str1 = ''
                 else:
                     str1 = fmt_str[0]
-                    fmt_list = FirmEyeStrMgr.parse_format_string(str1)
+                    fmt_list = FEStrMgr.parse_format_string(str1)
                     # 判断字符串中的格式字符
                     if fmt_list != [] and 's' in ''.join(fmt_list):
                         if vuln_regs[-1] == '...':
@@ -72,12 +72,12 @@ def printf_func_analysis(func_name, xref_list):
                             for idx in range(len(fmt_list)):
                                 if 's' in fmt_list[idx]:
                                     str_reg = 'R%s' % (len(vuln_regs)-1 + idx)
-                                    FirmEyeLogger.info("从%s回溯字符串%s" % (num_to_hexstr(xref_addr_t), str_reg))
-                                    str_tracer = FirmEyeArgsTracer(xref_addr_t, str_reg, max_node=256)
+                                    FELogger.info("从%s回溯字符串%s" % (num_to_hexstr(xref_addr_t), str_reg))
+                                    str_tracer = FEArgsTracer(xref_addr_t, str_reg, max_node=256)
                                     str_source_addr = str_tracer.run()
                                     print('str_source_addr: ', str_source_addr)
                                     if str_source_addr == []:
-                                        FirmEyeLogger.info("未找到%s字符串地址" % str_reg)
+                                        FELogger.info("未找到%s字符串地址" % str_reg)
                                         vuln_flag = 1
                                         break
                                     else:
@@ -92,7 +92,7 @@ def printf_func_analysis(func_name, xref_list):
                         else:
                             vuln_flag = 1
                     else:
-                        FirmEyeLogger.info("格式字符串不包含s转换符号")
+                        FELogger.info("格式字符串不包含s转换符号")
                         vuln_flag = 0
 
             data = AnalysisChooseData(vuln=vuln_flag, name=func_name_t, ea=xref_addr_t, addr1=addr1, str1=str1, other1=str_siz_addr)
@@ -107,7 +107,7 @@ def printf_func_analysis(func_name, xref_list):
         for rule in vuln_rule:
             if rule['vuln_type'] == 'format_string':
                 continue
-            FirmEyeLogger.info('检测%s漏洞' % rule['vuln_type'])
+            FELogger.info('检测%s漏洞' % rule['vuln_type'])
             vuln_regs = rule['vuln_regs']
             if vuln_regs[-1] == '...':
                 fmt_reg = vuln_regs[-2]
@@ -124,13 +124,13 @@ def printf_func_analysis(func_name, xref_list):
 
             # 判断是否有size参数
             if siz_reg != None:
-                FirmEyeLogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
-                siz_tracer = FirmEyeArgsTracer(xref_addr_t, siz_reg, max_node=256)
+                FELogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
+                siz_tracer = FEArgsTracer(xref_addr_t, siz_reg, max_node=256)
                 siz_source_addr = siz_tracer.run()
                 print('siz_source_addr: ', siz_source_addr)
                 # 判断是否找到size的地址
                 if siz_source_addr == []:
-                    FirmEyeLogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
+                    FELogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
                     check_fmt_reg(xref_addr_t, fmt_reg, args_rule)
                 else:
                     for siz_addr_t in siz_source_addr:
@@ -171,21 +171,21 @@ def str_func_analysis(func_name, xref_list):
         else:
             str_siz_addr = num_to_hexstr(siz_addr_t)
 
-        FirmEyeLogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), src_reg))
-        src_tracer = FirmEyeArgsTracer(xref_addr_t, src_reg)
+        FELogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), src_reg))
+        src_tracer = FEArgsTracer(xref_addr_t, src_reg)
         src_source_addr = src_tracer.run()
         print('src_source_addr: ', src_source_addr)
         # 判断是否找到字符串来源地址
         if src_source_addr == []:
-            FirmEyeLogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
+            FELogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
             vuln_flag = 1
         else:
             for src_addr in src_source_addr:
                 addr1 = src_addr
-                src_str = FirmEyeStrMgr.get_mem_string(src_addr)
+                src_str = FEStrMgr.get_mem_string(src_addr)
                 # 判断是否找到字符串
                 if src_str == []:
-                    FirmEyeLogger.info('来源字符串未找到%s' % num_to_hexstr(xref_addr_t))
+                    FELogger.info('来源字符串未找到%s' % num_to_hexstr(xref_addr_t))
                     vuln_flag = 1
                 else:
                     # 判断来源地址是否为内存
@@ -208,17 +208,17 @@ def str_func_analysis(func_name, xref_list):
     if len(vuln_regs) == 2:
         siz_reg = vuln_regs[1]
 
-    FirmEyeLogger.info('检测%s漏洞' % vuln_rule[0]['vuln_type'])
+    FELogger.info('检测%s漏洞' % vuln_rule[0]['vuln_type'])
     for xref_addr_t in xref_list_t:
         # 判断是否有size参数
         if siz_reg != None:
-            FirmEyeLogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
-            siz_tracer = FirmEyeArgsTracer(xref_addr_t, siz_reg, max_node=256)
+            FELogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
+            siz_tracer = FEArgsTracer(xref_addr_t, siz_reg, max_node=256)
             siz_source_addr = siz_tracer.run()
             print('siz_source_addr: ', siz_source_addr)
             # 判断是否找到size的地址
             if siz_source_addr == []:
-                FirmEyeLogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
+                FELogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
                 data = AnalysisChooseData(vuln=1, name=func_name_t, ea=xref_addr_t)
                 items.append(data)
             else:
@@ -260,31 +260,31 @@ def system_func_analysis(func_name, xref_list):
     vuln_rule = SINK_FUNC[func_name_t]['vuln_rule']
     vuln_reg = vuln_rule[0]['vuln_regs'][0]
 
-    FirmEyeLogger.info('检测%s漏洞' % vuln_rule[0]['vuln_type'])
+    FELogger.info('检测%s漏洞' % vuln_rule[0]['vuln_type'])
     for xref_addr_t in xref_list_t:
-        FirmEyeLogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), vuln_reg))
-        tracer = FirmEyeArgsTracer(xref_addr_t, vuln_reg)
+        FELogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), vuln_reg))
+        tracer = FEArgsTracer(xref_addr_t, vuln_reg)
         source_addr = tracer.run()
         print('source_addr: ', source_addr)
         # 判断是否找到目标地址
         if source_addr == []:
-            FirmEyeLogger.info("目标地址未找到%s" % num_to_hexstr(xref_addr_t))
+            FELogger.info("目标地址未找到%s" % num_to_hexstr(xref_addr_t))
             vuln_flag = 1
         else:
             for cmd_addr in source_addr:
                 addr1 = cmd_addr
                 # 判断字符串是否来自内存
                 if idc.get_operand_type(cmd_addr, 1) == ida_ua.o_mem:
-                    cmd_str = FirmEyeStrMgr.get_mem_string(cmd_addr)
+                    cmd_str = FEStrMgr.get_mem_string(cmd_addr)
                     # 判断是否找到字符串
                     if cmd_str == []:
-                        FirmEyeLogger.info("硬编码命令未找到%s" % num_to_hexstr(xref_addr_t))
+                        FELogger.info("硬编码命令未找到%s" % num_to_hexstr(xref_addr_t))
                         vuln_flag = 1
                     else:
                         vuln_flag = 0
                         str1 = cmd_str[0]
                 else:
-                    FirmEyeLogger.info("命令来自外部%s" % num_to_hexstr(xref_addr_t))
+                    FELogger.info("命令来自外部%s" % num_to_hexstr(xref_addr_t))
                     vuln_flag = 1
 
         data = AnalysisChooseData(vuln=vuln_flag, name=func_name_t, ea=xref_addr_t, addr1=addr1, str1=str1)
@@ -292,7 +292,7 @@ def system_func_analysis(func_name, xref_list):
     return items
 
 
-class FirmEyeStaticForm(ida_kernwin.Form):
+class FEStaticForm(ida_kernwin.Form):
     """
     静态分析窗口
     """
@@ -355,7 +355,7 @@ Firmeye Static Analyzer
             act_info = '删除'
 
         if self.sink_func_xref_dict == {}:
-            mgr_t = FirmEyeSinkFuncMgr()
+            mgr_t = FESinkFuncMgr()
             for func_name, xref_list in mgr_t.gen_sink_func_xref():
                 tmp_list = []
                 for xref_addr_t in xref_list:
@@ -365,7 +365,7 @@ Firmeye Static Analyzer
         else:
             for xref_addr_t in reduce(lambda x, y: x+y, self.sink_func_xref_dict.values()):
                 action(xref_addr_t)
-        FirmEyeLogger.info('已%s断点：危险函数调用地址（全部）' % act_info)
+        FELogger.info('已%s断点：危险函数调用地址（全部）' % act_info)
 
     def btn_add_all_xref_bpt(self, code=0):
         """添加断点 所有危险函数调用地址"""
@@ -386,11 +386,11 @@ Firmeye Static Analyzer
         tgt_t = ida_kernwin.ask_str('', 0, '请输入危险函数名')
         if tgt_t in SINK_FUNC:
             if not tgt_t in self.sink_func_xref_dict:
-                mgr_t = FirmEyeSinkFuncMgr()
+                mgr_t = FESinkFuncMgr()
                 xref_list = mgr_t.get_one_func_xref(tgt_t)
 
                 if not xref_list:
-                    FirmEyeLogger.warn("未找到函数%s" % tgt_t)
+                    FELogger.warn("未找到函数%s" % tgt_t)
                     return
 
                 tmp_list = []
@@ -401,9 +401,9 @@ Firmeye Static Analyzer
             else:
                 for xref_addr_t in self.sink_func_xref_dict[tgt_t]:
                     action(xref_addr_t)
-            FirmEyeLogger.info("已%s断点：危险函数调用地址（%s）" % (act_info, tgt_t))
+            FELogger.info("已%s断点：危险函数调用地址（%s）" % (act_info, tgt_t))
         else:
-            FirmEyeLogger.warn("未支持函数")
+            FELogger.warn("未支持函数")
 
     def btn_add_one_xref_bpt(self, code=0):
         """添加断点 某个危险函数调用地址"""
@@ -420,53 +420,53 @@ Firmeye Static Analyzer
         for xref_addr_t in reduce(lambda x, y: x + y, self.vuln_func_fast_dict.values()):
             ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
 
-        FirmEyeLogger.info('已添加断点：危险函数漏洞分析（全部）')
+        FELogger.info('已添加断点：危险函数漏洞分析（全部）')
 
     def btn_del_all_vuln_bpt(self, code=0):
         """删除断点 所有危险函数漏洞地址"""
         for xref_addr_t in reduce(lambda x, y: x + y, self.vuln_func_fast_dict.values()):
             ida_dbg.del_bpt(xref_addr_t)
 
-        FirmEyeLogger.info('已删除断点：危险函数漏洞分析（全部）')
+        FELogger.info('已删除断点：危险函数漏洞分析（全部）')
 
     def btn_add_one_vuln_bpt(self, code=0):
         """添加断点 某个危险函数漏洞地址"""
         tgt_t = ida_kernwin.ask_str('', 0, '请输入危险函数名')
         if tgt_t in SINK_FUNC:
             if not tgt_t in self.vuln_func_fast_dict:
-                mgr_t = FirmEyeSinkFuncMgr()
+                mgr_t = FESinkFuncMgr()
                 xref_list = mgr_t.get_one_func_xref(tgt_t)
                 tag = SINK_FUNC[tgt_t]['tag']
 
                 if not xref_list:
-                    FirmEyeLogger.warn("未找到函数%s" % tgt_t)
+                    FELogger.warn("未找到函数%s" % tgt_t)
                     return
 
-                if tag == PRINTF:
+                if tag == FUNC_TAG['PRINTF']:
                     items = printf_func_analysis(tgt_t, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == STRING:
+                elif tag == FUNC_TAG['STRING']:
                     items = str_func_analysis(tgt_t, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == SCANF:
+                elif tag == FUNC_TAG['SCANF']:
                     items = scanf_func_analysis(tgt_t, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == SYSTEM:
+                elif tag == FUNC_TAG['SYSTEM']:
                     items = system_func_analysis(tgt_t, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == MEMORY:
+                elif tag == FUNC_TAG['MEMORY']:
                     items = mem_func_analysis(tgt_t, xref_list)
                     self.add_fast_dict_from_items(items)
                 else:
-                    FirmEyeLogger.info("未支持函数%s" % tgt_t)
+                    FELogger.info("未支持函数%s" % tgt_t)
 
             if tgt_t in self.vuln_func_fast_dict:
                 for xref_addr_t in self.vuln_func_fast_dict[tgt_t]:
                     ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
 
-            FirmEyeLogger.info('已添加断点：危险函数漏洞分析（%s）' % tgt_t)
+            FELogger.info('已添加断点：危险函数漏洞分析（%s）' % tgt_t)
         else:
-            FirmEyeLogger.warn("未支持函数")
+            FELogger.warn("未支持函数")
 
     def btn_del_one_vuln_bpt(self, code=0):
         """删除断点 某个危险函数漏洞地址"""
@@ -475,9 +475,9 @@ Firmeye Static Analyzer
             if tgt_t in self.vuln_func_fast_dict:
                 for xref_addr_t in self.vuln_func_fast_dict[tgt_t]:
                     ida_dbg.del_bpt(xref_addr_t)
-            FirmEyeLogger.info("已删除断点：危险函数漏洞分析（%s）" % tgt_t)
+            FELogger.info("已删除断点：危险函数漏洞分析（%s）" % tgt_t)
         else:
-            FirmEyeLogger.warn("未支持函数")
+            FELogger.warn("未支持函数")
 
     def add_tmp_func(self, info_only=False):
         """
@@ -522,9 +522,9 @@ Firmeye Static Analyzer
                             ida_dbg.add_bpt(xref_addr_t, 0, idc.BPT_DEFAULT)
                         else:
                             continue
-                FirmEyeLogger.info("已添加断点：%s" % rule)
+                FELogger.info("已添加断点：%s" % rule)
         except Exception as e:
-            FirmEyeLogger.info("输入信息有误：%s" % e)
+            FELogger.info("输入信息有误：%s" % e)
 
     def btn_add_tmp_func_bpt(self, code=0):
         """添加临时函数并下断点"""
@@ -538,9 +538,9 @@ Firmeye Static Analyzer
                 for xref_addr_t in self.tmp_func_dict[tgt_t]:
                     ida_dbg.del_bpt(xref_addr_t)
                 CUSTOM_FUNC.pop(tgt_t)
-            FirmEyeLogger.info("已删除断点：指定函数调用地址 %s" % tgt_t)
+            FELogger.info("已删除断点：指定函数调用地址 %s" % tgt_t)
         except Exception:
-            FirmEyeLogger.warn("请输入函数名")
+            FELogger.warn("请输入函数名")
 
     def btn_add_tmp_func_info(self, code=0):
         """添加临时函数"""
@@ -557,7 +557,7 @@ Firmeye Static Analyzer
             if ida_dbg.getn_bpt(i, bpt_t) == True:
                 bpt_list.append(bpt_t.ea)
             else:
-                FirmEyeLogger.info("获取断点失败 %d" % i)
+                FELogger.info("获取断点失败 %d" % i)
         return bpt_list
 
     def btn_add_next_inst_bpt(self, code=0):
@@ -593,7 +593,7 @@ Firmeye Static Analyzer
             ff.writerow(header)
             ff.writerows(bpt_list)
 
-        FirmEyeLogger.info("导出断点完成：%s" % csv_filepath_t)
+        FELogger.info("导出断点完成：%s" % csv_filepath_t)
 
     def btn_import_all_bpt_addr(self, code=0):
         """
@@ -608,9 +608,9 @@ Firmeye Static Analyzer
                 reader = csv.reader(f)
                 for row in reader:
                     ida_dbg.add_bpt(int(row[0], 16), 0, idc.BPT_DEFAULT)
-            FirmEyeLogger.info("导入断点完成：%s" % csv_filepath_t)
+            FELogger.info("导入断点完成：%s" % csv_filepath_t)
         else:
-            FirmEyeLogger.warn("文件不存在：%s" % csv_filepath_t)
+            FELogger.warn("文件不存在：%s" % csv_filepath_t)
 
     def btn_get_sink_func_addr(self, code=0):
         """
@@ -621,7 +621,7 @@ Firmeye Static Analyzer
                 ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX]]
         items = []
 
-        mgr_t = FirmEyeSinkFuncMgr()
+        mgr_t = FESinkFuncMgr()
         for func_name, func_addr in mgr_t.gen_sink_func_addr():
             data = AnalysisChooseData(vuln=0, name=func_name, ea=func_addr)
             items.append(data)
@@ -639,7 +639,7 @@ Firmeye Static Analyzer
                 ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX]]
         items = []
 
-        mgr_t = FirmEyeSinkFuncMgr()
+        mgr_t = FESinkFuncMgr()
         for func_name, xref_list in mgr_t.gen_sink_func_xref():
             tmp_list = []
             for xref_addr in xref_list:
@@ -663,11 +663,11 @@ Firmeye Static Analyzer
                 ['函数地址', 10 | ida_kernwin.Choose.CHCOL_HEX]]
             items = []
 
-            mgr_t = FirmEyeSinkFuncMgr()
+            mgr_t = FESinkFuncMgr()
             xref_list = mgr_t.get_one_func_xref(tgt_t)
 
             if not xref_list:
-                FirmEyeLogger.warn("未找到函数%s" % tgt_t)
+                FELogger.warn("未找到函数%s" % tgt_t)
                 return
 
             tmp_list = []
@@ -680,7 +680,7 @@ Firmeye Static Analyzer
             chooser = AnalysisChooser(title='危险函数调用地址', cols=cols, item=items)
             chooser.Show()
         else:
-            FirmEyeLogger.warn("未支持函数")
+            FELogger.warn("未支持函数")
 
     def get_vuln_addr_from_items(self, items):
         vuln_list = set()
@@ -698,29 +698,29 @@ Firmeye Static Analyzer
             self.vuln_func_fast_dict[func_name] = vuln_list
 
     def add_fast_dict_from_all_vuln_func(self):
-        mgr_t = FirmEyeSinkFuncMgr()
+        mgr_t = FESinkFuncMgr()
         for func_name, xref_list in mgr_t.gen_sink_func_xref():
             if not func_name in self.vuln_func_fast_dict:
                 tag = SINK_FUNC[func_name]['tag']
                 print('func_name: ', func_name)
                 print('xref_list: ', len(xref_list))
-                if tag == PRINTF:
+                if tag == FUNC_TAG['PRINTF']:
                     items = printf_func_analysis(func_name, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == STRING:
+                elif tag == FUNC_TAG['STRING']:
                     items = str_func_analysis(func_name, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == SCANF:
+                elif tag == FUNC_TAG['SCANF']:
                     items = scanf_func_analysis(func_name, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == SYSTEM:
+                elif tag == FUNC_TAG['SYSTEM']:
                     items = system_func_analysis(func_name, xref_list)
                     self.add_fast_dict_from_items(items)
-                elif tag == MEMORY:
+                elif tag == FUNC_TAG['MEMORY']:
                     items = mem_func_analysis(func_name, xref_list)
                     self.add_fast_dict_from_items(items)
                 else:
-                    FirmEyeLogger.info("未支持函数%s" % func_name)
+                    FELogger.info("未支持函数%s" % func_name)
             else:
                 continue
 
@@ -732,16 +732,16 @@ Firmeye Static Analyzer
         """查看某个危险函数漏洞地址"""
         tgt_t = ida_kernwin.ask_str('', 0, '请输入要查看的危险函数名')
         if tgt_t in SINK_FUNC:
-            mgr_t = FirmEyeSinkFuncMgr()
+            mgr_t = FESinkFuncMgr()
             xref_list = mgr_t.get_one_func_xref(tgt_t)
             tag = SINK_FUNC[tgt_t]['tag']
 
             if not xref_list:
-                FirmEyeLogger.warn("未找到函数%s" % tgt_t)
+                FELogger.warn("未找到函数%s" % tgt_t)
                 return
 
             # printf系列函数
-            if tag == PRINTF:
+            if tag == FUNC_TAG['PRINTF']:
                 items = printf_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
                 cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
@@ -754,7 +754,7 @@ Firmeye Static Analyzer
                 chooser.Show()
 
             # str系列函数
-            elif tag == STRING:
+            elif tag == FUNC_TAG['STRING']:
                 items = str_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
                 cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
@@ -767,7 +767,7 @@ Firmeye Static Analyzer
                 chooser.Show()
 
             # scanf系列函数
-            elif tag == SCANF:
+            elif tag == FUNC_TAG['SCANF']:
                 items = scanf_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
                 cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
@@ -780,7 +780,7 @@ Firmeye Static Analyzer
                 chooser.Show()
 
             # system函数
-            elif tag == SYSTEM:
+            elif tag == FUNC_TAG['SYSTEM']:
                 items = system_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
                 cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
@@ -792,7 +792,7 @@ Firmeye Static Analyzer
                 chooser.Show()
 
             # mem系列函数
-            elif tag == MEMORY:
+            elif tag == FUNC_TAG['MEMORY']:
                 items = mem_func_analysis(tgt_t, xref_list)
                 self.add_fast_dict_from_items(items)
                 cols = [['可疑', 3 | ida_kernwin.Choose.CHCOL_DEC],
@@ -804,12 +804,12 @@ Firmeye Static Analyzer
                 chooser = AnalysisChooser(title='危险函数漏洞分析', cols=cols, item=items)
                 chooser.Show()
             else:
-                FirmEyeLogger.info("未支持函数%s" % tgt_t)
+                FELogger.info("未支持函数%s" % tgt_t)
         else:
-            FirmEyeLogger.warn("未支持函数")
+            FELogger.warn("未支持函数")
 
 
-class FirmEyeStaticAnalyzer(ida_kernwin.action_handler_t):
+class FEStaticAnalyzer(ida_kernwin.action_handler_t):
     """
     静态分析器
     """
@@ -818,11 +818,11 @@ class FirmEyeStaticAnalyzer(ida_kernwin.action_handler_t):
         ida_kernwin.action_handler_t.__init__(self)
 
     def show_menu(self):
-        main = FirmEyeStaticForm()
+        main = FEStaticForm()
         main.Compile()
         main.Execute()
 
-    @FirmEyeLogger.reload
+    @FELogger.reload
     def activate(self, ctx):
         self.show_menu()
 

@@ -4,12 +4,12 @@ import ida_funcs
 import ida_kernwin
 import idautils
 
-from firmeye.utility import FirmEyeArgsTracer
+from firmeye.utility import FEArgsTracer
 from firmeye.helper import num_to_hexstr
-from firmeye.logger import FirmEyeLogger
+from firmeye.logger import FELogger
 
 
-class FirmEyeFuncTestForm(ida_kernwin.Form):
+class FEFuncTestForm(ida_kernwin.Form):
 
     def __init__(self):
         ida_kernwin.Form.__init__(self, """STARTITEM 0
@@ -30,15 +30,15 @@ DFS测试（从某函数所有调用地址回溯某寄存器）：
             try:
                 addr_t = int(addr_t, 16)
             except Exception:
-                FirmEyeLogger.warn("无效地址")
+                FELogger.warn("无效地址")
                 return
 
-            FirmEyeLogger.info("从地址%s回溯寄存器%s" % (num_to_hexstr(addr_t), reg_t))
-            tracer = FirmEyeArgsTracer(addr_t, reg_t)
+            FELogger.info("从地址%s回溯寄存器%s" % (num_to_hexstr(addr_t), reg_t))
+            tracer = FEArgsTracer(addr_t, reg_t)
             source_addr = tracer.run()
             print('source_addr: ', source_addr)
         else:
-            FirmEyeLogger.warn("请输入起点地址和寄存器")
+            FELogger.warn("请输入起点地址和寄存器")
 
     def btn_dfs_test_2(self, code=0):
         tgt_t = ida_kernwin.ask_str('', 0, '请输入函数名')
@@ -49,16 +49,16 @@ DFS测试（从某函数所有调用地址回溯某寄存器）：
                 if func_name_t == tgt_t:
                     for xref_addr_t in idautils.CodeRefsTo(func_addr_t, 0):
                         if ida_funcs.get_func(xref_addr_t):
-                            FirmEyeLogger.info("从地址%s回溯寄存器%s" % (num_to_hexstr(xref_addr_t), reg_t))
-                            tracer = FirmEyeArgsTracer(xref_addr_t, reg_t, max_node=256)
+                            FELogger.info("从地址%s回溯寄存器%s" % (num_to_hexstr(xref_addr_t), reg_t))
+                            tracer = FEArgsTracer(xref_addr_t, reg_t, max_node=256)
                             source_addr = tracer.run()
                             print('source_addr: ', source_addr)
                     break
             else:
-                FirmEyeLogger.warn("请输入函数名和寄存器")
+                FELogger.warn("请输入函数名和寄存器")
 
 
-class FirmEyeFuncTest(ida_kernwin.action_handler_t):
+class FEFuncTest(ida_kernwin.action_handler_t):
     """功能测试器
     DFS寄存器回溯测试
     """
@@ -67,11 +67,11 @@ class FirmEyeFuncTest(ida_kernwin.action_handler_t):
         ida_kernwin.action_handler_t.__init__(self)
 
     def show_menu(self):
-        main = FirmEyeFuncTestForm()
+        main = FEFuncTestForm()
         main.Compile()
         main.Execute()
 
-    @FirmEyeLogger.reload
+    @FELogger.reload
     def activate(self, ctx):
         self.show_menu()
 

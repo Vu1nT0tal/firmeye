@@ -11,13 +11,13 @@ import ida_funcs
 import idautils
 
 from firmeye.regs import arm_regset
-from firmeye.utility import FirmEyeStrMgr, SINK_FUNC
+from firmeye.utility import FEStrMgr, SINK_FUNC
 from firmeye.helper import num_to_hexstr, is_func_call
-from firmeye.logger import FirmEyeLogger
+from firmeye.logger import FELogger
 from firmeye.analysis.static import get_custom_func
 
 
-class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
+class FEDbgHook(ida_dbg.DBG_Hooks):
     """
     调试器Hook类
     """
@@ -86,27 +86,27 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
                 continue
             elif arg_t == 'int':
                 run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
             elif arg_t == 'str':
                 arg_v = args[str_reg].ival
                 if arg_v != 0:
-                    str_t = FirmEyeStrMgr.get_string_from_mem(arg_v)
+                    str_t = FEStrMgr.get_string_from_mem(arg_v)
                 else:
                     str_t = ''
                 run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                FirmEyeLogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
             elif arg_t == 'fmt':
                 arg_v = args[str_reg].ival
-                fmt_t = FirmEyeStrMgr.get_string_from_mem(arg_v)
+                fmt_t = FEStrMgr.get_string_from_mem(arg_v)
                 run_info[str_reg] = [num_to_hexstr(arg_v), repr(fmt_t)]
-                FirmEyeLogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(fmt_t)))
+                FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(fmt_t)))
             else:
                 run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
 
         # 判断是否包含格式字符串
         if fmt_t != '':
-            fmt_list = FirmEyeStrMgr.parse_format_string(str_t)
+            fmt_list = FEStrMgr.parse_format_string(str_t)
             args_num = len(fmt_list) + idx + 1
             # 判断变长参数总个数
             if idx+1 == args_num:
@@ -117,12 +117,12 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
                     str_reg = 'R%s' % (idx+jdx+1)
                     if 's' in fmt_list[jdx]:
                         arg_v = args[str_reg].ival
-                        str_t = FirmEyeStrMgr.get_string_from_mem(arg_v)
+                        str_t = FEStrMgr.get_string_from_mem(arg_v)
                         run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                        FirmEyeLogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                        FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
                     else:
                         run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                        FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                        FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
             # n>4 寄存器+栈
             else:
                 stack_num = args_num - 4
@@ -131,12 +131,12 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
                     str_reg = 'R%s' % (idx+jdx+1)
                     if 's' in fmt_list[jdx]:
                         arg_v = args[str_reg].ival
-                        str_t = FirmEyeStrMgr.get_string_from_mem(arg_v)
+                        str_t = FEStrMgr.get_string_from_mem(arg_v)
                         run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                        FirmEyeLogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                        FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
                     else:
                         run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                        FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                        FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
 
                 run_info[arm_regset.stack] = []
                 for kdx in range(stack_num):
@@ -145,12 +145,12 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
                         if stack_v == 0:
                             str_t = ''
                         else:
-                            str_t = FirmEyeStrMgr.get_string_from_mem(stack_v)
+                            str_t = FEStrMgr.get_string_from_mem(stack_v)
                         run_info[arm_regset.stack].append([num_to_hexstr(sp_addr), num_to_hexstr(stack_v), repr(str_t)])
-                        FirmEyeLogger.console('stack: %s - %s => %s' % (num_to_hexstr(sp_addr), num_to_hexstr(stack_v), repr(str_t)))
+                        FELogger.console('stack: %s - %s => %s' % (num_to_hexstr(sp_addr), num_to_hexstr(stack_v), repr(str_t)))
                     else:
                         run_info[arm_regset.stack].append([num_to_hexstr(sp_addr), num_to_hexstr(stack_v), None])
-                        FirmEyeLogger.console('stack: %s - %s' % (num_to_hexstr(sp_addr), num_to_hexstr(stack_v)))
+                        FELogger.console('stack: %s - %s' % (num_to_hexstr(sp_addr), num_to_hexstr(stack_v)))
                     sp_addr += 4
         else:
             pass
@@ -171,18 +171,18 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
                 continue
             elif arg_t == 'int':
                 run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
             elif arg_t == 'str':
                 arg_v = args[str_reg].ival
                 if arg_v != 0:
-                    str_t = FirmEyeStrMgr.get_string_from_mem(arg_v)
+                    str_t = FEStrMgr.get_string_from_mem(arg_v)
                 else:
                     str_t = ''
                 run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                FirmEyeLogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
             else:
                 run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FirmEyeLogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
 
         return run_info
 
@@ -196,7 +196,7 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
 
         rv = ida_idd.regval_t()
         ida_dbg.get_reg_val('PC', rv)
-        FirmEyeLogger.console('PC: %s' % num_to_hexstr(rv.ival))
+        FELogger.console('PC: %s' % num_to_hexstr(rv.ival))
 
         # 判断是否包含变长参数
         if args_rule[-1] == '...':
@@ -220,13 +220,13 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
 
         rv = ida_idd.regval_t()
         ida_dbg.get_reg_val('PC', rv)
-        FirmEyeLogger.console('PC: %s' % num_to_hexstr(rv.ival))
+        FELogger.console('PC: %s' % num_to_hexstr(rv.ival))
 
         arg_v = args[arm_regset.ret].ival
-        #str_t = FirmEyeStrMgr.get_string_from_mem(arg_v)
+        #str_t = FEStrMgr.get_string_from_mem(arg_v)
         #runtime_info[arm_regset.ret] = [num_to_hexstr(arg_v), repr(str_t)]
-        #FirmEyeLogger.console('ret: %s => %s' % (num_to_hexstr(arg_v), repr(str_t)))
-        FirmEyeLogger.console('%s: %s' % (arm_regset.ret, num_to_hexstr(arg_v)))
+        #FELogger.console('ret: %s => %s' % (num_to_hexstr(arg_v), repr(str_t)))
+        FELogger.console('%s: %s' % (arm_regset.ret, num_to_hexstr(arg_v)))
         return runtime_info
 
     def dbg_bpt(self, tid, ea):
@@ -242,15 +242,15 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
 
             args_rule = self.get_args_rule(func_name_t, ea)
             if args_rule == False:
-                FirmEyeLogger.console('临时断点%s' % num_to_hexstr(ea))
+                FELogger.console('临时断点%s' % num_to_hexstr(ea))
             else:
                 up_func_name_t = ida_funcs.get_func_name(ea)
                 func_hit_count = self.inc_break_func_hit_count(up_func_name_t)
 
-                FirmEyeLogger.console(func_name_t + ' - ' + up_func_name_t + '-'*60)
-                FirmEyeLogger.console('tid - %d - %d, pointHit: %d, funcHit: %d' %
+                FELogger.console(func_name_t + ' - ' + up_func_name_t + '-'*60)
+                FELogger.console('tid - %d - %d, pointHit: %d, funcHit: %d' %
                                         (tid, time.time(), point_hit_count, func_hit_count))
-                FirmEyeLogger.console(('%s - before' + '-'*30) % func_name_t)
+                FELogger.console(('%s - before' + '-'*30) % func_name_t)
 
                 ida_dbg.refresh_debugger_memory()
                 before_info = self.get_before_run_info(args_rule)
@@ -262,13 +262,13 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
             func_name = idc.print_operand(func_ea, 0)
             args_rule = self.get_args_rule(func_name, func_ea)
 
-            FirmEyeLogger.console(('%s - after ' + '-'*30) % func_name)
+            FELogger.console(('%s - after ' + '-'*30) % func_name)
 
             # ida_dbg.refresh_debugger_memory()
             after_info = self.get_after_run_info(args_rule)
 
         else:
-            FirmEyeLogger.console('临时断点%s' % num_to_hexstr(ea))
+            FELogger.console('临时断点%s' % num_to_hexstr(ea))
 
         # 是否单步调试
         if self.step_dbg == False:
@@ -277,7 +277,7 @@ class FirmEyeDbgHook(ida_dbg.DBG_Hooks):
         return 0
 
 
-class FirmEyeDynamicAnalyzer(ida_kernwin.action_handler_t):
+class FEDynamicAnalyzer(ida_kernwin.action_handler_t):
     """
     动态分析器
     """
@@ -286,7 +286,7 @@ class FirmEyeDynamicAnalyzer(ida_kernwin.action_handler_t):
 
     def __init__(self):
         ida_kernwin.action_handler_t.__init__(self)
-        self.firmeye_dbg_hook = FirmEyeDbgHook()
+        self.firmeye_dbg_hook = FEDbgHook()
 
     def get_xdbg_hook_status(self):
         return self.__xdbg_hook_status
@@ -294,13 +294,13 @@ class FirmEyeDynamicAnalyzer(ida_kernwin.action_handler_t):
     def set_xdbg_hook_status(self):
         self.__xdbg_hook_status = not self.__xdbg_hook_status
 
-    @FirmEyeLogger.reload
+    @FELogger.reload
     def activate(self, ctx):
         if self.get_xdbg_hook_status():
-            FirmEyeLogger.info('关闭调试事件记录')
+            FELogger.info('关闭调试事件记录')
             self.firmeye_dbg_hook.unhook()
         else:
-            FirmEyeLogger.info('启用调试事件记录')
+            FELogger.info('启用调试事件记录')
 
             if ida_kernwin.ask_yn(0, '是否单步调试？') == 1:
                 self.firmeye_dbg_hook.step_dbg = True

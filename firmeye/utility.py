@@ -15,11 +15,11 @@ import ida_idaapi
 import idautils
 
 from firmeye.config import SINK_FUNC, INST_LIST
-from firmeye.logger import FirmEyeLogger
+from firmeye.logger import FELogger
 from firmeye.helper import num_to_hexstr
 
 
-class FirmEyeSinkFuncMgr():
+class FESinkFuncMgr():
     """sink函数管理器
     提供获取sink函数的调用地址和交叉引用信息的工具函数
     sink_func_info: 默认存储sink函数全局配置信息
@@ -59,7 +59,7 @@ class FirmEyeSinkFuncMgr():
                 continue
 
 
-class FirmEyeArgsTracer():
+class FEArgsTracer():
     """参数回溯器
     基于DFS提供寄存器回溯功能
     addr: 回溯起始地址
@@ -169,7 +169,7 @@ class FirmEyeArgsTracer():
         mnemonic_t = ida_ua.print_insn_mnem(addr_t)
         line = idc.generate_disasm_line(addr_t, 0)
         if reg_t == 'R0' and mnemonic_t.startswith('BLX') and addr_t != self.trace_addr:
-            FirmEyeLogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
+            FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
             return None
 
         inst_list_t = INST_LIST
@@ -181,13 +181,13 @@ class FirmEyeArgsTracer():
                     # 找到      LDM R1, {R0-R3}
                     regs = self.parse_operands(mnemonic_t, addr_t)
                     if reg_t not in regs:
-                        FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                        FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                     else:
-                        FirmEyeLogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
+                        FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
                         return None
                 else:
                     if op1 != reg_t or mnemonic_t in inst_list_t['other']:
-                        FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                        FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                     elif mnemonic_t in inst_list_t['arithmetic']:
                         # 停止      ADD R0, SP; ADD R0, SP, #10
                         # 回溯R0    ADD R0, R1; ADD R0, #10
@@ -196,35 +196,35 @@ class FirmEyeArgsTracer():
                         if idc.get_operand_type(addr_t, 2) == ida_ua.o_void:
                             if idc.get_operand_type(addr_t, 1) == ida_ua.o_reg:
                                 if op2_tmp == 'SP':
-                                    FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
+                                    FELogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                     return None
                                 else:
-                                    FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                    FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                             else:
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                         elif idc.get_operand_type(addr_t, 3) == ida_ua.o_void:
                             op3_tmp = idc.print_operand(addr_t, 2)
                             if op2_tmp == 'SP' or op3_tmp == 'SP':
-                                FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                             elif reg_t == op2_tmp or reg_t == op3_tmp:
-                                FirmEyeLogger.info("复杂运算\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("复杂运算\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                             else:
                                 reg_t = op2_tmp
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                         else:
                             op3_tmp = idc.print_operand(addr_t, 2)
                             op4_tmp = idc.print_operand(addr_t, 3)
                             if op2_tmp == 'SP' or op3_tmp == 'SP' or op4_tmp == 'SP':
-                                FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                             elif reg_t == op2_tmp or reg_t == op3_tmp or reg_t == op4_tmp:
-                                FirmEyeLogger.info("复杂运算\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("复杂运算\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                             else:
                                 reg_t = op2_tmp
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                     elif mnemonic_t in inst_list_t['move']:
                         # 停止      MOV R0, SP; MOV R0, SP, #10
                         # 找到      MOV R0, #10
@@ -233,19 +233,19 @@ class FirmEyeArgsTracer():
                         if mnemonic_t.startswith('VMOV'):
                             op3_tmp = idc.print_operand(addr_t, 2)
                             reg_t = op3_tmp
-                            FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                            FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                         else:
                             op2_tmp = ida_ua.print_operand(addr_t, 1)
                             if op2_tmp == 'SP':
-                                FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                             elif idc.get_operand_type(addr_t, 1) == ida_ua.o_reg:
                                 reg_t = op2_tmp
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                             elif mnemonic_t in ['MOVT.W', 'MOVTGT.W', 'MOVTLE.W']:
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                             else:
-                                FirmEyeLogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                     elif mnemonic_t in inst_list_t['load']:
                         # 找到      LDR R0, =xxxxxxx
@@ -253,22 +253,22 @@ class FirmEyeArgsTracer():
                         # 回溯R1    LDR R0, [R1, #10]
                         # 回溯R0    LDR R0, [R0, R1, #10]
                         if idc.get_operand_type(addr_t, 1) == ida_ua.o_mem:
-                            FirmEyeLogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
+                            FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
                             return None
                         else:
                             regs_tmp = self.parse_operands(mnemonic_t, addr_t)
                             if 'SP' in regs_tmp:
-                                FirmEyeLogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("取消回溯SP\t"+num_to_hexstr(addr)+"\t"+line)
                                 return None
                             elif reg_t in regs_tmp:
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                             else:
                                 reg_t = regs_tmp[0]
-                                FirmEyeLogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
+                                FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
                     else:
-                        FirmEyeLogger.info("未知指令\t"+num_to_hexstr(addr)+"\t"+line)
+                        FELogger.info("未知指令\t"+num_to_hexstr(addr)+"\t"+line)
             else:
-                FirmEyeLogger.info("未知指令\t"+num_to_hexstr(addr)+"\t"+line)
+                FELogger.info("未知指令\t"+num_to_hexstr(addr)+"\t"+line)
         else:
             pass
 
@@ -324,7 +324,7 @@ class FirmEyeArgsTracer():
         for ref_addr in self.get_all_ref(blk.start_ea):
             block = self.get_blk(ref_addr)
             if block:
-                FirmEyeLogger.info("基本块跳转\t"+num_to_hexstr(ref_addr)+"\t"+idc.generate_disasm_line(ref_addr, 0))
+                FELogger.info("基本块跳转\t"+num_to_hexstr(ref_addr)+"\t"+idc.generate_disasm_line(ref_addr, 0))
                 node_t = self.create_tree_node(ref_addr, prev=node)
                 self.dfs(node_t, reg, block)
 
@@ -344,12 +344,12 @@ class FirmEyeArgsTracer():
                 else:
                     self.cache['addr'].add(cur_t)
             else:
-                FirmEyeLogger.info("该块已经回溯，取消操作")
+                FELogger.info("该块已经回溯，取消操作")
         else:
-            FirmEyeLogger.info("超出最大回溯块数量")
+            FELogger.info("超出最大回溯块数量")
 
-    @FirmEyeLogger.show_time_cost
-    @FirmEyeLogger.log_time
+    @FELogger.show_time_cost
+    @FELogger.log_time
     def run(self):
         """
         启动回溯
@@ -359,7 +359,7 @@ class FirmEyeArgsTracer():
         return list(self.cache['addr'])
 
 
-class FirmEyeStrMgr():
+class FEStrMgr():
     """字符串管理器
     提供获取和解析字符串的功能
     minl: 定义字符串的最短长度

@@ -10,7 +10,7 @@ import ida_kernwin
 from firmeye.config import DEBUG
 
 
-class FirmEyeLogger():
+class FELogger():
     """
     日志、调试配置管理类
     """

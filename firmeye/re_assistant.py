@@ -12,13 +12,13 @@ import ida_nalt
 import idautils
 
 from firmeye.helper import num_to_hexstr
-from firmeye.logger import FirmEyeLogger
+from firmeye.logger import FELogger
 from firmeye.tools.idapyhelper import PyHelperChooser
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
 from firmeye.idaxml import XmlExporter, Cancelled
 
 
-class FirmEyeReAssistForm(ida_kernwin.Form):
+class FEReAssistForm(ida_kernwin.Form):
 
     def __init__(self):
         ida_kernwin.Form.__init__(self, """STARTITEM 0
@@ -65,14 +65,14 @@ Ghidra函数列表
                             make_func_addrs.append(addr)
                         else:
                             if addr not in func_addrs:
-                                FirmEyeLogger.info("创建函数%s失败" % num_to_hexstr(addr))
-                FirmEyeLogger.info("Ghidra导出函数文件：%s，已导入" % ghidra_path_t)
+                                FELogger.info("创建函数%s失败" % num_to_hexstr(addr))
+                FELogger.info("Ghidra导出函数文件：%s，已导入" % ghidra_path_t)
             else:
-                FirmEyeLogger.erro("未找到Ghidra导出函数文件：%s" % ghidra_path_t)
+                FELogger.erro("未找到Ghidra导出函数文件：%s" % ghidra_path_t)
         else:
-            FirmEyeLogger.warn("请输入Ghidra导出函数文件路径")
+            FELogger.warn("请输入Ghidra导出函数文件路径")
 
-        FirmEyeLogger.info("成功创建%d个新函数" % len(make_func_addrs))
+        FELogger.info("成功创建%d个新函数" % len(make_func_addrs))
 
     def btn_func_xref_count(self, code=0):
         """
@@ -108,13 +108,13 @@ Ghidra函数列表
             try:
                 try:
                     xml.export_xml()
-                    FirmEyeLogger.info("已导出IDA数据到XML")
+                    FELogger.info("已导出IDA数据到XML")
                 except Cancelled:
                     ida_kernwin.hide_wait_box()
-                    FirmEyeLogger.warn("已取消XML导出")
+                    FELogger.warn("已取消XML导出")
                 except Exception as e:
                     ida_kernwin.hide_wait_box()
-                    FirmEyeLogger.warn("导出XML失败 %s" % e)
+                    FELogger.warn("导出XML失败 %s" % e)
             finally:
                 xml.cleanup()
                 ida_auto.set_ida_state(st)
@@ -130,7 +130,7 @@ Ghidra函数列表
             do_export()
 
 
-class FirmEyeReAssist(ida_kernwin.action_handler_t):
+class FEReAssist(ida_kernwin.action_handler_t):
     """
     提供一些逆向辅助工具
     """
@@ -139,11 +139,11 @@ class FirmEyeReAssist(ida_kernwin.action_handler_t):
         ida_kernwin.action_handler_t.__init__(self)
 
     def show_menu(self):
-        main = FirmEyeReAssistForm()
+        main = FEReAssistForm()
         main.Compile()
         main.Execute()
 
-    @FirmEyeLogger.reload
+    @FELogger.reload
     def activate(self, ctx):
         self.show_menu()
 
