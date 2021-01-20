@@ -113,7 +113,6 @@ def printf_func_analysis(func_name, xref_list):
 
             if rule['vuln_type'] == 'format_string':
                 fmt_reg = rule['vuln_regs'][0]
-                FELogger.info("从%s回溯格式字符串%s" % (num_to_hexstr(xref_addr_t), fmt_reg))
                 check_fmt_reg(xref_addr_t, fmt_reg, args_rule, parse=False)
             else:
                 vuln_regs = rule['vuln_regs']

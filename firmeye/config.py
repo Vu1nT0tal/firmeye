@@ -275,6 +275,17 @@ SINK_FUNC = {
         ]
     },
 
+    '__aeabi_memcpy': {    # void *__aeabi_memcpy(void *dest, const void *src, size_t n);
+        'tag': FUNC_TAG['MEMORY'],
+        'args_rule': ['str', 'str', 'int'],
+        'vuln_rule': [
+            {
+                'vuln_type': 'stack_buffer_overflow',
+                'vuln_regs': ['R1', 'R2'],
+            }
+        ]
+    },
+
     'popen': {    # FILE *popen(const char *command, const char *type);
         'tag': '',
         'args_rule': ['str', 'str'],
@@ -317,6 +328,39 @@ SINK_FUNC = {
                 'vuln_regs': ['R0'],
             }
         ]
+    },
+}
+
+# 当回溯过程中遇到其他函数对寄存器有影响，则按规则切换回溯对象。
+SOURCE_FUNC = {
+    'gets': {       # char *gets(char *s);
+        'dest': 'R0',
+        'src': 'None',
+    },
+
+    'scanf': {      # int scanf(const char *format, ...);
+        'dest': 'R1',
+        'src': 'None',
+    },
+
+    'strcat': {     # char *strcat(char *dest, const char *src)
+        'dest': 'R0',
+        'src': 'R1',
+    },
+
+    'strcpy': {     # char *strcpy(char *dest, const char *src);
+        'dest': 'R0',
+        'src': 'R1',
+    },
+
+    'memcpy': {     # void *memcpy(void *dest, const void *src, size_t n);
+        'dest': 'R0',
+        'src': 'R1',
+    },
+
+    '__aeabi_memcpy': { # void *__aeabi_memcpy(void *dest, const void *src, size_t n);
+        'dest': 'R0',
+        'src': 'R1',
     },
 }
 

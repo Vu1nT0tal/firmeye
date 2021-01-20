@@ -14,9 +14,9 @@ import ida_segment
 import ida_idaapi
 import idautils
 
-from firmeye.config import SINK_FUNC, INST_LIST
+from firmeye.config import SINK_FUNC, INST_LIST, SOURCE_FUNC
 from firmeye.logger import FELogger
-from firmeye.helper import num_to_hexstr
+from firmeye.helper import num_to_hexstr, name_to_addr
 
 
 class FESinkFuncMgr():
@@ -168,9 +168,22 @@ class FEArgsTracer():
 
         mnemonic_t = ida_ua.print_insn_mnem(addr_t)
         line = idc.generate_disasm_line(addr_t, 0)
-        if reg_t == 'R0' and mnemonic_t.startswith('BLX') and addr_t != self.trace_addr:
-            FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
-            return None
+        if mnemonic_t.startswith('BLX') and addr_t != self.trace_addr:
+            FELogger.info("途径函数\t"+num_to_hexstr(addr)+"\t"+line)
+            func_name = idc.print_operand(addr_t, 0)
+            if reg_t == 'R0':
+                does_return = ida_funcs.get_func(name_to_addr(func_name)).does_return()
+                if does_return == True:
+                    FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
+                    return None
+            else:
+                if func_name in SOURCE_FUNC and reg_t == SOURCE_FUNC[func_name].dest:
+                    reg_t = SOURCE_FUNC[func_name].src
+                    if reg_t == 'None':
+                        FELogger.info("找到赋值点\t"+num_to_hexstr(addr)+"\t"+line)
+                        return None
+                    else:
+                        FELogger.info("回溯"+reg_t+"\t"+num_to_hexstr(addr)+"\t"+line)
 
         inst_list_t = INST_LIST
         reg_re = re.compile(reg_t + '\\D|' + reg_t + '\\Z')
