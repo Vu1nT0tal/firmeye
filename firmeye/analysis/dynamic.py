@@ -25,39 +25,39 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
     def __init__(self):
         ida_dbg.DBG_Hooks.__init__(self)
 
-        self.__break_point_hit_count = {}       # 断点触发次数
-        self.__break_func_hit_count = {}        # 断点所在函数触发次数
+        self.bp_hit_count = {}          # 断点触发次数
+        self.bf_hit_count = {}          # 断点所在函数触发次数
 
-        self.__firmeye_reg_val = {}             # 保存寄存器的值
+        self.reg_val = {}               # 保存寄存器的值
         for reg in arm_regset.args + (arm_regset.stack, ):
-            self.__firmeye_reg_val[reg] = ida_idd.regval_t()
+            self.reg_val[reg] = ida_idd.regval_t()
 
         self.step_dbg = False
 
     def inc_break_func_hit_count(self, func_name):
-        if not func_name in self.__break_func_hit_count:
-            self.__break_func_hit_count[func_name] = 0
+        if not func_name in self.bf_hit_count:
+            self.bf_hit_count[func_name] = 0
 
-        self.__break_func_hit_count[func_name] += 1
+        self.bf_hit_count[func_name] += 1
 
-        return self.__break_func_hit_count[func_name]
+        return self.bf_hit_count[func_name]
 
     def inc_break_point_hit_count(self, addr):
-        if not addr in self.__break_point_hit_count:
-            self.__break_point_hit_count[addr] = 0
+        if not addr in self.bp_hit_count:
+            self.bp_hit_count[addr] = 0
 
-        self.__break_point_hit_count[addr] += 1
+        self.bp_hit_count[addr] += 1
 
-        return self.__break_point_hit_count[addr]
+        return self.bp_hit_count[addr]
 
     def get_xdbg_reg_var(self):
         """
         获取寄存器的值
         """
-        for reg_t in self.__firmeye_reg_val:
-            ida_dbg.get_reg_val(reg_t, self.__firmeye_reg_val[reg_t])
+        for reg_t in self.reg_val:
+            ida_dbg.get_reg_val(reg_t, self.reg_val[reg_t])
 
-        return self.__firmeye_reg_val
+        return self.reg_val
 
     def get_args_rule(self, func_name, ea):
         CUSTOM_FUNC = get_custom_func()
@@ -282,31 +282,31 @@ class FEDynamicAnalyzer(ida_kernwin.action_handler_t):
     动态分析器
     """
 
-    __xdbg_hook_status = False
+    hook_status = False
 
     def __init__(self):
         ida_kernwin.action_handler_t.__init__(self)
-        self.firmeye_dbg_hook = FEDbgHook()
+        self.dbg_hook = FEDbgHook()
 
     def get_xdbg_hook_status(self):
-        return self.__xdbg_hook_status
+        return self.hook_status
 
     def set_xdbg_hook_status(self):
-        self.__xdbg_hook_status = not self.__xdbg_hook_status
+        self.hook_status = not self.hook_status
 
     @FELogger.reload
     def activate(self, ctx):
         if self.get_xdbg_hook_status():
             FELogger.info('关闭调试事件记录')
-            self.firmeye_dbg_hook.unhook()
+            self.dbg_hook.unhook()
         else:
             FELogger.info('启用调试事件记录')
 
             if ida_kernwin.ask_yn(0, '是否单步调试？') == 1:
-                self.firmeye_dbg_hook.step_dbg = True
+                self.dbg_hook.step_dbg = True
             else:
-                self.firmeye_dbg_hook.step_dbg = False
-            self.firmeye_dbg_hook.hook()
+                self.dbg_hook.step_dbg = False
+            self.dbg_hook.hook()
 
         self.set_xdbg_hook_status()
 

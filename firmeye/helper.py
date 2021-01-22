@@ -12,6 +12,9 @@ import idc
 
 
 def hexstr(num):
+    """
+    IDA内可双击跳转的地址形式
+    """
     return format(num, '#010x')
 
 def is_func_call(ea):

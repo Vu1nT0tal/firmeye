@@ -166,9 +166,9 @@ class FEArgsTracer():
         reg_t = reg
         addr_t = addr
 
-        mnemonic_t = ida_ua.print_insn_mnem(addr_t)
+        mnem = ida_ua.print_insn_mnem(addr_t)
         line = idc.generate_disasm_line(addr_t, 0)
-        if mnemonic_t.startswith('BLX') and addr_t != self.trace_addr:
+        if mnem.startswith('BLX') and addr_t != self.trace_addr:
             FELogger.info("途径函数\t"+hexstr(addr)+"\t"+line)
             func_name = idc.print_operand(addr_t, 0)
             if reg_t == 'R0':
@@ -188,20 +188,20 @@ class FEArgsTracer():
         inst_list_t = INST_LIST
         reg_re = re.compile(reg_t + '\\D|' + reg_t + '\\Z')
         if reg_re.search(line):
-            if mnemonic_t in reduce(lambda x, y: x + y, [value for value in inst_list_t.values()]):
+            if mnem in reduce(lambda x, y: x + y, [value for value in inst_list_t.values()]):
                 op1 = idc.print_operand(addr_t, 0).split("!")[0]
-                if mnemonic_t in inst_list_t['load_multi']:
+                if mnem in inst_list_t['load_multi']:
                     # 找到      LDM R1, {R0-R3}
-                    regs = self.parse_operands(mnemonic_t, addr_t)
+                    regs = self.parse_operands(mnem, addr_t)
                     if reg_t not in regs:
                         FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
                     else:
                         FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
                         return None
                 else:
-                    if op1 != reg_t or mnemonic_t in inst_list_t['other']:
+                    if op1 != reg_t or mnem in inst_list_t['other']:
                         FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
-                    elif mnemonic_t in inst_list_t['arithmetic']:
+                    elif mnem in inst_list_t['arithmetic']:
                         # 停止      ADD R0, SP; ADD R0, SP, #10
                         # 回溯R0    ADD R0, R1; ADD R0, #10
                         # 回溯R1    ADD R0, R1, #10; ADD R0, R1, R2
@@ -238,12 +238,12 @@ class FEArgsTracer():
                             else:
                                 reg_t = op2_tmp
                                 FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
-                    elif mnemonic_t in inst_list_t['move']:
+                    elif mnem in inst_list_t['move']:
                         # 停止      MOV R0, SP; MOV R0, SP, #10
                         # 找到      MOV R0, #10
                         # 回溯R1    MOV R0, R1
                         # 回溯D8    VMOV R0, R1, D16
-                        if mnemonic_t.startswith('VMOV'):
+                        if mnem.startswith('VMOV'):
                             op3_tmp = idc.print_operand(addr_t, 2)
                             reg_t = op3_tmp
                             FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
@@ -255,12 +255,12 @@ class FEArgsTracer():
                             elif idc.get_operand_type(addr_t, 1) == ida_ua.o_reg:
                                 reg_t = op2_tmp
                                 FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
-                            elif mnemonic_t in ['MOVT.W', 'MOVTGT.W', 'MOVTLE.W']:
+                            elif mnem in ['MOVT.W', 'MOVTGT.W', 'MOVTLE.W']:
                                 FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
                             else:
                                 FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
                                 return None
-                    elif mnemonic_t in inst_list_t['load']:
+                    elif mnem in inst_list_t['load']:
                         # 找到      LDR R0, =xxxxxxx
                         # 停止      LDR R0, [SP, #10]
                         # 回溯R1    LDR R0, [R1, #10]
@@ -269,7 +269,7 @@ class FEArgsTracer():
                             FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
                             return None
                         else:
-                            regs_tmp = self.parse_operands(mnemonic_t, addr_t)
+                            regs_tmp = self.parse_operands(mnem, addr_t)
                             if 'SP' in regs_tmp:
                                 FELogger.info("取消回溯SP\t"+hexstr(addr)+"\t"+line)
                                 return None

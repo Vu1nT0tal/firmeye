@@ -15,22 +15,22 @@ class FELogger():
     日志、调试配置管理类
     """
 
-    __enable_dbg = DEBUG
-    __log_path = ''
-    __log_fd = None
-    __time_cost = {}
+    enable_dbg = DEBUG
+    log_path = ''
+    log_fd = None
+    time_cost = {}
 
     @classmethod
     def get_dbg_mode(cls):
-        return cls.__enable_dbg
+        return cls.enable_dbg
 
     @classmethod
     def enable_debug(cls):
-        cls.__enable_dbg = True
+        cls.enable_dbg = True
 
     @classmethod
     def disable_debug(cls):
-        cls.__enable_dbg = False
+        cls.enable_dbg = False
 
     @classmethod
     def reload(cls, func):
@@ -38,13 +38,13 @@ class FELogger():
         def wrapper(*args, **kwargs):
             if cls.get_dbg_mode():
                 cur_workpath = os.getcwd()
-                log_filename = '%s.xdbg' % ida_nalt.get_input_file_path().split('\\')[-1]
+                log_filename = '%s.xdbg' % ida_nalt.get_root_filename()
                 log_filepath = os.path.join(cur_workpath, log_filename)
-                cls.__log_path = log_filepath
-                if cls.__log_fd:
-                    cls.__log_fd.close()
-                    cls.__log_fd = None
-                cls.__log_fd = open(cls.__log_path, 'a')
+                cls.log_path = log_filepath
+                if cls.log_fd:
+                    cls.log_fd.close()
+                    cls.log_fd = None
+                cls.log_fd = open(cls.log_path, 'a')
             return func(*args, **kwargs)
         return wrapper
 
@@ -55,9 +55,9 @@ class FELogger():
             s_time = time.perf_counter()
             ret_t = func(*args, **kwargs)
             e_time = time.perf_counter()
-            if not func.__name__ in cls.__time_cost:
-                cls.__time_cost[func.__name__] = 0
-            cls.__time_cost[func.__name__] += e_time - s_time
+            if not func.__name__ in cls.time_cost:
+                cls.time_cost[func.__name__] = 0
+            cls.time_cost[func.__name__] += e_time - s_time
             return ret_t
         return wrapper
 
@@ -66,8 +66,8 @@ class FELogger():
         @wraps(func)
         def wrapper(*args, **kwargs):
             ret_t = func(*args, **kwargs)
-            for func_name in cls.__time_cost:
-                cls.info('%s: %f seconds' % (func_name, cls.__time_cost[func_name]))
+            for func_name in cls.time_cost:
+                cls.info('%s: %f seconds' % (func_name, cls.time_cost[func_name]))
             return ret_t
         return wrapper
 
@@ -78,10 +78,10 @@ class FELogger():
         else:
             msg_t = '[%s] %s\n' % (level, msg)
 
-        if cls.__log_fd:
-            if cls.__enable_dbg or debug:
-                cls.__log_fd.write(msg_t)
-                cls.__log_fd.flush()
+        if cls.log_fd:
+            if cls.enable_dbg or debug:
+                cls.log_fd.write(msg_t)
+                cls.log_fd.flush()
 
         ida_kernwin.msg(msg_t)
         if level == 'warn' or level == 'erro':
