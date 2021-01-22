@@ -12,7 +12,7 @@ import idautils
 
 from firmeye.regs import arm_regset
 from firmeye.utility import FEStrMgr, SINK_FUNC
-from firmeye.helper import num_to_hexstr, is_func_call
+from firmeye.helper import hexstr, is_func_call
 from firmeye.logger import FELogger
 from firmeye.analysis.static import get_custom_func
 
@@ -65,8 +65,8 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
             args_rule = SINK_FUNC[func_name]['args_rule']
         elif func_name in CUSTOM_FUNC:
             args_rule = CUSTOM_FUNC[func_name]['args_rule']
-        elif num_to_hexstr(ea) in CUSTOM_FUNC:
-            args_rule = CUSTOM_FUNC[num_to_hexstr(ea)]['args_rule']
+        elif hexstr(ea) in CUSTOM_FUNC:
+            args_rule = CUSTOM_FUNC[hexstr(ea)]['args_rule']
         else:
             args_rule = False
         return args_rule
@@ -85,24 +85,24 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
             if arg_t == 'none':      # 跳过无关参数
                 continue
             elif arg_t == 'int':
-                run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                run_info[str_reg] = [hexstr(args[str_reg].ival), None]
+                FELogger.console('%s: %s' % (str_reg, hexstr(args[str_reg].ival)))
             elif arg_t == 'str':
                 arg_v = args[str_reg].ival
                 if arg_v != 0:
                     str_t = FEStrMgr.get_string_from_mem(arg_v)
                 else:
                     str_t = ''
-                run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                run_info[str_reg] = [hexstr(arg_v), repr(str_t)]
+                FELogger.console('%s: %s => %s' % (str_reg, hexstr(arg_v), repr(str_t)))
             elif arg_t == 'fmt':
                 arg_v = args[str_reg].ival
                 fmt_t = FEStrMgr.get_string_from_mem(arg_v)
-                run_info[str_reg] = [num_to_hexstr(arg_v), repr(fmt_t)]
-                FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(fmt_t)))
+                run_info[str_reg] = [hexstr(arg_v), repr(fmt_t)]
+                FELogger.console('%s: %s => %s' % (str_reg, hexstr(arg_v), repr(fmt_t)))
             else:
-                run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                run_info[str_reg] = [hexstr(args[str_reg].ival), None]
+                FELogger.console('%s: %s' % (str_reg, hexstr(args[str_reg].ival)))
 
         # 判断是否包含格式字符串
         if fmt_t != '':
@@ -118,11 +118,11 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
                     if 's' in fmt_list[jdx]:
                         arg_v = args[str_reg].ival
                         str_t = FEStrMgr.get_string_from_mem(arg_v)
-                        run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                        FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                        run_info[str_reg] = [hexstr(arg_v), repr(str_t)]
+                        FELogger.console('%s: %s => %s' % (str_reg, hexstr(arg_v), repr(str_t)))
                     else:
-                        run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                        FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                        run_info[str_reg] = [hexstr(args[str_reg].ival), None]
+                        FELogger.console('%s: %s' % (str_reg, hexstr(args[str_reg].ival)))
             # n>4 寄存器+栈
             else:
                 stack_num = args_num - 4
@@ -132,11 +132,11 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
                     if 's' in fmt_list[jdx]:
                         arg_v = args[str_reg].ival
                         str_t = FEStrMgr.get_string_from_mem(arg_v)
-                        run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                        FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                        run_info[str_reg] = [hexstr(arg_v), repr(str_t)]
+                        FELogger.console('%s: %s => %s' % (str_reg, hexstr(arg_v), repr(str_t)))
                     else:
-                        run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                        FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                        run_info[str_reg] = [hexstr(args[str_reg].ival), None]
+                        FELogger.console('%s: %s' % (str_reg, hexstr(args[str_reg].ival)))
 
                 run_info[arm_regset.stack] = []
                 for kdx in range(stack_num):
@@ -146,11 +146,11 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
                             str_t = ''
                         else:
                             str_t = FEStrMgr.get_string_from_mem(stack_v)
-                        run_info[arm_regset.stack].append([num_to_hexstr(sp_addr), num_to_hexstr(stack_v), repr(str_t)])
-                        FELogger.console('stack: %s - %s => %s' % (num_to_hexstr(sp_addr), num_to_hexstr(stack_v), repr(str_t)))
+                        run_info[arm_regset.stack].append([hexstr(sp_addr), hexstr(stack_v), repr(str_t)])
+                        FELogger.console('stack: %s - %s => %s' % (hexstr(sp_addr), hexstr(stack_v), repr(str_t)))
                     else:
-                        run_info[arm_regset.stack].append([num_to_hexstr(sp_addr), num_to_hexstr(stack_v), None])
-                        FELogger.console('stack: %s - %s' % (num_to_hexstr(sp_addr), num_to_hexstr(stack_v)))
+                        run_info[arm_regset.stack].append([hexstr(sp_addr), hexstr(stack_v), None])
+                        FELogger.console('stack: %s - %s' % (hexstr(sp_addr), hexstr(stack_v)))
                     sp_addr += 4
         else:
             pass
@@ -170,19 +170,19 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
             if arg_t == 'none':     # 跳过无关的参数
                 continue
             elif arg_t == 'int':
-                run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                run_info[str_reg] = [hexstr(args[str_reg].ival), None]
+                FELogger.console('%s: %s' % (str_reg, hexstr(args[str_reg].ival)))
             elif arg_t == 'str':
                 arg_v = args[str_reg].ival
                 if arg_v != 0:
                     str_t = FEStrMgr.get_string_from_mem(arg_v)
                 else:
                     str_t = ''
-                run_info[str_reg] = [num_to_hexstr(arg_v), repr(str_t)]
-                FELogger.console('%s: %s => %s' % (str_reg, num_to_hexstr(arg_v), repr(str_t)))
+                run_info[str_reg] = [hexstr(arg_v), repr(str_t)]
+                FELogger.console('%s: %s => %s' % (str_reg, hexstr(arg_v), repr(str_t)))
             else:
-                run_info[str_reg] = [num_to_hexstr(args[str_reg].ival), None]
-                FELogger.console('%s: %s' % (str_reg, num_to_hexstr(args[str_reg].ival)))
+                run_info[str_reg] = [hexstr(args[str_reg].ival), None]
+                FELogger.console('%s: %s' % (str_reg, hexstr(args[str_reg].ival)))
 
         return run_info
 
@@ -196,7 +196,7 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
 
         rv = ida_idd.regval_t()
         ida_dbg.get_reg_val('PC', rv)
-        FELogger.console('PC: %s' % num_to_hexstr(rv.ival))
+        FELogger.console('PC: %s' % hexstr(rv.ival))
 
         # 判断是否包含变长参数
         if args_rule[-1] == '...':
@@ -220,13 +220,13 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
 
         rv = ida_idd.regval_t()
         ida_dbg.get_reg_val('PC', rv)
-        FELogger.console('PC: %s' % num_to_hexstr(rv.ival))
+        FELogger.console('PC: %s' % hexstr(rv.ival))
 
         arg_v = args[arm_regset.ret].ival
         #str_t = FEStrMgr.get_string_from_mem(arg_v)
-        #runtime_info[arm_regset.ret] = [num_to_hexstr(arg_v), repr(str_t)]
-        #FELogger.console('ret: %s => %s' % (num_to_hexstr(arg_v), repr(str_t)))
-        FELogger.console('%s: %s' % (arm_regset.ret, num_to_hexstr(arg_v)))
+        #runtime_info[arm_regset.ret] = [hexstr(arg_v), repr(str_t)]
+        #FELogger.console('ret: %s => %s' % (hexstr(arg_v), repr(str_t)))
+        FELogger.console('%s: %s' % (arm_regset.ret, hexstr(arg_v)))
         return runtime_info
 
     def dbg_bpt(self, tid, ea):
@@ -242,12 +242,12 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
 
             args_rule = self.get_args_rule(func_name_t, ea)
             if args_rule == False:
-                FELogger.console('临时断点%s' % num_to_hexstr(ea))
+                FELogger.console('临时断点%s' % hexstr(ea))
             else:
-                up_func_name_t = ida_funcs.get_func_name(ea)
-                func_hit_count = self.inc_break_func_hit_count(up_func_name_t)
+                up_func_name = ida_funcs.get_func_name(ea)
+                func_hit_count = self.inc_break_func_hit_count(up_func_name)
 
-                FELogger.console(func_name_t + ' - ' + up_func_name_t + '-'*60)
+                FELogger.console(func_name_t + ' - ' + up_func_name + '-'*60)
                 FELogger.console('tid - %d - %d, pointHit: %d, funcHit: %d' %
                                         (tid, time.time(), point_hit_count, func_hit_count))
                 FELogger.console(('%s - before' + '-'*30) % func_name_t)
@@ -268,7 +268,7 @@ class FEDbgHook(ida_dbg.DBG_Hooks):
             after_info = self.get_after_run_info(args_rule)
 
         else:
-            FELogger.console('临时断点%s' % num_to_hexstr(ea))
+            FELogger.console('临时断点%s' % hexstr(ea))
 
         # 是否单步调试
         if self.step_dbg == False:

@@ -17,7 +17,7 @@ import ida_idaapi
 
 from firmeye.config import SINK_FUNC, FUNC_TAG
 from firmeye.utility import FEArgsTracer, FEStrMgr, FESinkFuncMgr
-from firmeye.helper import num_to_hexstr
+from firmeye.helper import hexstr
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
 from firmeye.logger import FELogger
 
@@ -40,15 +40,15 @@ def printf_func_analysis(func_name, xref_list):
         if siz_addr_t == 0:
             str_siz_addr = ''
         else:
-            str_siz_addr = num_to_hexstr(siz_addr_t)
+            str_siz_addr = hexstr(siz_addr_t)
 
-        FELogger.info("从%s回溯格式字符串%s" % (num_to_hexstr(xref_addr_t), fmt_reg))
+        FELogger.info("从%s回溯格式字符串%s" % (hexstr(xref_addr_t), fmt_reg))
         tracer = FEArgsTracer(xref_addr_t, fmt_reg)
         source_addr = tracer.run()
         print('source_addr: ', source_addr)
         # 判断是否找到字符串来源地址
         if source_addr == []:
-            FELogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
+            FELogger.info("未找到目标地址%s" % hexstr(xref_addr_t))
             vuln_flag = 1
         else:
             for fmt_addr in source_addr:
@@ -56,11 +56,11 @@ def printf_func_analysis(func_name, xref_list):
                 fmt_str = FEStrMgr.get_mem_string(fmt_addr)
                 # 判断是否找到字符串
                 if fmt_str == []:
-                    FELogger.info('格式字符串未找到%s' % num_to_hexstr(xref_addr_t))
+                    FELogger.info('格式字符串未找到%s' % hexstr(xref_addr_t))
                     vuln_flag = 1
                     str1 = ''
                 else:
-                    FELogger.info('找到格式字符串%s' % num_to_hexstr(xref_addr_t))
+                    FELogger.info('找到格式字符串%s' % hexstr(xref_addr_t))
                     str1 = fmt_str[0]
                     if parse == False:
                         vuln_flag = 0
@@ -76,7 +76,7 @@ def printf_func_analysis(func_name, xref_list):
                                 for idx in range(len(fmt_list)):
                                     if 's' in fmt_list[idx]:
                                         str_reg = 'R%s' % (len(vuln_regs)-1 + idx)
-                                        FELogger.info("从%s回溯字符串%s" % (num_to_hexstr(xref_addr_t), str_reg))
+                                        FELogger.info("从%s回溯字符串%s" % (hexstr(xref_addr_t), str_reg))
                                         str_tracer = FEArgsTracer(xref_addr_t, str_reg, max_node=256)
                                         str_source_addr = str_tracer.run()
                                         print('str_source_addr: ', str_source_addr)
@@ -131,13 +131,13 @@ def printf_func_analysis(func_name, xref_list):
 
                 # 判断是否有size参数
                 if siz_reg != None:
-                    FELogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
+                    FELogger.info("从%s回溯字符串长度%s" % (hexstr(xref_addr_t), siz_reg))
                     siz_tracer = FEArgsTracer(xref_addr_t, siz_reg, max_node=256)
                     siz_source_addr = siz_tracer.run()
                     print('siz_source_addr: ', siz_source_addr)
                     # 判断是否找到size的地址
                     if siz_source_addr == []:
-                        FELogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
+                        FELogger.info("未找到size地址%s" % hexstr(xref_addr_t))
                         check_fmt_reg(xref_addr_t, fmt_reg, args_rule, parse=True)
                     else:
                         for siz_addr_t in siz_source_addr:
@@ -176,15 +176,15 @@ def str_func_analysis(func_name, xref_list):
         if siz_addr_t == 0:
             str_siz_addr = ''
         else:
-            str_siz_addr = num_to_hexstr(siz_addr_t)
+            str_siz_addr = hexstr(siz_addr_t)
 
-        FELogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), src_reg))
+        FELogger.info("从%s回溯来源地址%s" % (hexstr(xref_addr_t), src_reg))
         src_tracer = FEArgsTracer(xref_addr_t, src_reg)
         src_source_addr = src_tracer.run()
         print('src_source_addr: ', src_source_addr)
         # 判断是否找到字符串来源地址
         if src_source_addr == []:
-            FELogger.info("未找到目标地址%s" % num_to_hexstr(xref_addr_t))
+            FELogger.info("未找到目标地址%s" % hexstr(xref_addr_t))
             vuln_flag = 1
         else:
             for src_addr in src_source_addr:
@@ -192,7 +192,7 @@ def str_func_analysis(func_name, xref_list):
                 src_str = FEStrMgr.get_mem_string(src_addr)
                 # 判断是否找到字符串
                 if src_str == []:
-                    FELogger.info('来源字符串未找到%s' % num_to_hexstr(xref_addr_t))
+                    FELogger.info('来源字符串未找到%s' % hexstr(xref_addr_t))
                     vuln_flag = 1
                 else:
                     # 判断来源地址是否为内存
@@ -219,13 +219,13 @@ def str_func_analysis(func_name, xref_list):
     for xref_addr_t in xref_list_t:
         # 判断是否有size参数
         if siz_reg != None:
-            FELogger.info("从%s回溯字符串长度%s" % (num_to_hexstr(xref_addr_t), siz_reg))
+            FELogger.info("从%s回溯字符串长度%s" % (hexstr(xref_addr_t), siz_reg))
             siz_tracer = FEArgsTracer(xref_addr_t, siz_reg, max_node=256)
             siz_source_addr = siz_tracer.run()
             print('siz_source_addr: ', siz_source_addr)
             # 判断是否找到size的地址
             if siz_source_addr == []:
-                FELogger.info("未找到size地址%s" % num_to_hexstr(xref_addr_t))
+                FELogger.info("未找到size地址%s" % hexstr(xref_addr_t))
                 data = AnalysisChooseData(vuln=1, name=func_name_t, ea=xref_addr_t)
                 items.append(data)
             else:
@@ -269,13 +269,13 @@ def system_func_analysis(func_name, xref_list):
 
     FELogger.info('检测%s漏洞' % vuln_rule[0]['vuln_type'])
     for xref_addr_t in xref_list_t:
-        FELogger.info("从%s回溯来源地址%s" % (num_to_hexstr(xref_addr_t), vuln_reg))
+        FELogger.info("从%s回溯来源地址%s" % (hexstr(xref_addr_t), vuln_reg))
         tracer = FEArgsTracer(xref_addr_t, vuln_reg)
         source_addr = tracer.run()
         print('source_addr: ', source_addr)
         # 判断是否找到目标地址
         if source_addr == []:
-            FELogger.info("目标地址未找到%s" % num_to_hexstr(xref_addr_t))
+            FELogger.info("目标地址未找到%s" % hexstr(xref_addr_t))
             vuln_flag = 1
         else:
             for cmd_addr in source_addr:
@@ -285,13 +285,13 @@ def system_func_analysis(func_name, xref_list):
                     cmd_str = FEStrMgr.get_mem_string(cmd_addr)
                     # 判断是否找到字符串
                     if cmd_str == []:
-                        FELogger.info("硬编码命令未找到%s" % num_to_hexstr(xref_addr_t))
+                        FELogger.info("硬编码命令未找到%s" % hexstr(xref_addr_t))
                         vuln_flag = 1
                     else:
                         vuln_flag = 0
                         str1 = cmd_str[0]
                 else:
-                    FELogger.info("命令来自外部%s" % num_to_hexstr(xref_addr_t))
+                    FELogger.info("命令来自外部%s" % hexstr(xref_addr_t))
                     vuln_flag = 1
 
         data = AnalysisChooseData(vuln=vuln_flag, name=func_name_t, ea=xref_addr_t, addr1=addr1, str1=str1)
@@ -502,7 +502,7 @@ Firmeye Static Analyzer
                 if not tgt_t in self.tmp_func_dict:
                     if tgt_t.startswith('0x'):
                         addr_t = int(tgt_t, 16)
-                        addr_hexstr = num_to_hexstr(addr_t)
+                        addr_hexstr = hexstr(addr_t)
                         CUSTOM_FUNC[addr_hexstr] = {'args_rule': args_rule}
                         self.tmp_func_dict[addr_hexstr] = [addr_t]
                         if info_only == False:
@@ -588,36 +588,36 @@ Firmeye Static Analyzer
         """
         导出离线断点
         """
-        cur_workpath_t = os.getcwd()
-        csv_filepath_t = os.path.join(cur_workpath_t, '%s_bpt.csv' % ida_nalt.get_root_filename())
+        cur_workpath = os.getcwd()
+        csv_filepath = os.path.join(cur_workpath, '%s_bpt.csv' % ida_nalt.get_root_filename())
 
         bpt_list = self.get_all_bpt_list()
         bpt_list = [[format(bpt, '#010x')[2:]] for bpt in bpt_list]
 
         header = ['breakpoints']
-        with open(csv_filepath_t, 'w', newline='') as f:
+        with open(csv_filepath, 'w', newline='') as f:
             ff = csv.writer(f)
             ff.writerow(header)
             ff.writerows(bpt_list)
 
-        FELogger.info("导出断点完成：%s" % csv_filepath_t)
+        FELogger.info("导出断点完成：%s" % csv_filepath)
 
     def btn_import_all_bpt_addr(self, code=0):
         """
         导入离线断点
         """
-        cur_workpath_t = os.getcwd()
-        csv_filepath_t = os.path.join(cur_workpath_t, '%s_bpt.csv' % ida_nalt.get_root_filename())
+        cur_workpath = os.getcwd()
+        csv_filepath = os.path.join(cur_workpath, '%s_bpt.csv' % ida_nalt.get_root_filename())
 
-        if os.path.exists(csv_filepath_t):
-            with open(csv_filepath_t, 'r') as f:
+        if os.path.exists(csv_filepath):
+            with open(csv_filepath, 'r') as f:
                 next(f)
                 reader = csv.reader(f)
                 for row in reader:
                     ida_dbg.add_bpt(int(row[0], 16), 0, idc.BPT_DEFAULT)
-            FELogger.info("导入断点完成：%s" % csv_filepath_t)
+            FELogger.info("导入断点完成：%s" % csv_filepath)
         else:
-            FELogger.warn("文件不存在：%s" % csv_filepath_t)
+            FELogger.warn("文件不存在：%s" % csv_filepath)
 
     def btn_get_sink_func_addr(self, code=0):
         """

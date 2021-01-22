@@ -11,7 +11,7 @@ import idautils
 import idc
 
 
-def num_to_hexstr(num):
+def hexstr(num):
     return format(num, '#010x')
 
 def is_func_call(ea):
@@ -58,7 +58,7 @@ def unname_func(ea):
 
 def get_segments():
     """
-    返回所有segment的名字列表
+    返回所有segment的名字列表（但其实是section）
     """
 
     seg_names = []

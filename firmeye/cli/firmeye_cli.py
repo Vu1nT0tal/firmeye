@@ -5,7 +5,7 @@ import os
 import ida_pro
 
 from firmeye.utility import SINK_FUNC, FUNC_TAG, MEMORY
-from firmeye.helper import num_to_hexstr
+from firmeye.helper import hexstr
 from firmeye.analysis.static import FESinkFuncMgr, printf_func_analysis, str_func_analysis, scanf_func_analysis, system_func_analysis, mem_func_analysis
 
 def analysis():
@@ -39,10 +39,10 @@ def analysis():
 def build_result(items):
     lines = []
     for item in items:
-        data = [str(item.vuln), item.name, num_to_hexstr(item.ea)]
+        data = [str(item.vuln), item.name, hexstr(item.ea)]
         for x in [item.addr1, item.addr2]:
             if x != None:
-                data.append(num_to_hexstr(x))
+                data.append(hexstr(x))
             else:
                 continue
         for x in [item.str1, item.str2, item.other1]:

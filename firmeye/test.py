@@ -5,7 +5,7 @@ import ida_kernwin
 import idautils
 
 from firmeye.utility import FEArgsTracer
-from firmeye.helper import num_to_hexstr
+from firmeye.helper import hexstr
 from firmeye.logger import FELogger
 
 
@@ -33,7 +33,7 @@ DFS测试（从某函数所有调用地址回溯某寄存器）：
                 FELogger.warn("无效地址")
                 return
 
-            FELogger.info("从地址%s回溯寄存器%s" % (num_to_hexstr(addr_t), reg_t))
+            FELogger.info("从地址%s回溯寄存器%s" % (hexstr(addr_t), reg_t))
             tracer = FEArgsTracer(addr_t, reg_t)
             source_addr = tracer.run()
             print('source_addr: ', source_addr)
@@ -49,7 +49,7 @@ DFS测试（从某函数所有调用地址回溯某寄存器）：
                 if func_name_t == tgt_t:
                     for xref_addr_t in idautils.CodeRefsTo(func_addr_t, 0):
                         if ida_funcs.get_func(xref_addr_t):
-                            FELogger.info("从地址%s回溯寄存器%s" % (num_to_hexstr(xref_addr_t), reg_t))
+                            FELogger.info("从地址%s回溯寄存器%s" % (hexstr(xref_addr_t), reg_t))
                             tracer = FEArgsTracer(xref_addr_t, reg_t, max_node=256)
                             source_addr = tracer.run()
                             print('source_addr: ', source_addr)

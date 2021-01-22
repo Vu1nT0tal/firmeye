@@ -11,9 +11,10 @@ import ida_auto
 import ida_nalt
 import idautils
 
-from firmeye.helper import num_to_hexstr
+from firmeye.helper import hexstr
 from firmeye.logger import FELogger
 from firmeye.tools.idapyhelper import PyHelperChooser
+from firmeye.tools.checksec import Checksec
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
 from firmeye.idaxml import XmlExporter, Cancelled
 
@@ -25,6 +26,8 @@ class FEReAssistForm(ida_kernwin.Form):
 Reverse Assistant
 IDAPython帮助:
 <##查看:{btn_idapy_helper}>
+Checksec：
+<##查看:{btn_checksec}>
 Ghidra函数列表
 <##导入:{btn_imp_ghidra_funcs}>
 函数调用次数统计
@@ -33,6 +36,7 @@ Ghidra函数列表
 <##导出:{btn_export_ida_to_xml}>
 """, {
     'btn_idapy_helper': ida_kernwin.Form.ButtonInput(self.btn_idapy_helper),
+    'btn_checksec': ida_kernwin.Form.ButtonInput(self.btn_checksec),
     'btn_imp_ghidra_funcs': ida_kernwin.Form.ButtonInput(self.btn_imp_ghidra_funcs),
     'btn_func_xref_count': ida_kernwin.Form.ButtonInput(self.btn_func_xref_count),
     'btn_export_ida_to_xml': ida_kernwin.Form.ButtonInput(self.btn_export_ida_to_xml)
@@ -45,18 +49,30 @@ Ghidra函数列表
         helper = PyHelperChooser("IDAPyHelper")
         helper.Show()
 
+    def btn_checksec(self, code=0):
+        """
+        ELF Checksec
+        """
+        elfpath = ida_nalt.get_input_file_path()
+        if os.path.exists(elfpath):
+            result = Checksec(elfpath)
+            FELogger.info("-"*50+" Checksec "+"-"*50)
+            FELogger.info(result.sec)
+        else:
+            FELogger.info("原始文件不存在：%s" % elfpath)
+
     def btn_imp_ghidra_funcs(self, code=0):
         """
         导入Ghidra函数列表
         """
-        ghidra_filepath_t = os.path.join(os.getcwd(), 'ghidra_func_addrs.csv')
-        ghidra_path_t = ida_kernwin.ask_str(ghidra_filepath_t, 0, '导入的Ghidra导出函数文件路径')
+        ghidra_filepath = os.path.join(os.getcwd(), 'ghidra_func_addrs.csv')
+        ghidra_path = ida_kernwin.ask_str(ghidra_filepath, 0, '导入的Ghidra导出函数文件路径')
 
         func_addrs = list(idautils.Functions())
         make_func_addrs = []
-        if ghidra_path_t and ghidra_path_t != '':
-            if os.path.exists(ghidra_path_t):
-                with open(ghidra_path_t, 'rb') as f:
+        if ghidra_path and ghidra_path != '':
+            if os.path.exists(ghidra_path):
+                with open(ghidra_path, 'rb') as f:
                     next(f)
                     reader = csv.reader(f)
                     for row in reader:
@@ -65,10 +81,10 @@ Ghidra函数列表
                             make_func_addrs.append(addr)
                         else:
                             if addr not in func_addrs:
-                                FELogger.info("创建函数%s失败" % num_to_hexstr(addr))
-                FELogger.info("Ghidra导出函数文件：%s，已导入" % ghidra_path_t)
+                                FELogger.info("创建函数%s失败" % hexstr(addr))
+                FELogger.info("Ghidra导出函数文件：%s，已导入" % ghidra_path)
             else:
-                FELogger.erro("未找到Ghidra导出函数文件：%s" % ghidra_path_t)
+                FELogger.erro("未找到Ghidra导出函数文件：%s" % ghidra_path)
         else:
             FELogger.warn("请输入Ghidra导出函数文件路径")
 
@@ -119,11 +135,11 @@ Ghidra函数列表
                 xml.cleanup()
                 ida_auto.set_ida_state(st)
 
-        cur_workpath_t = os.getcwd()
-        xml_filepath_t = os.path.join(cur_workpath_t, '%s.xml' % ida_nalt.get_input_file_path())
-        bin_filepath_t = os.path.join(cur_workpath_t, '%s.bytes' % ida_nalt.get_input_file_path())
+        cur_workpath = os.getcwd()
+        xml_filepath = os.path.join(cur_workpath, '%s.xml' % ida_nalt.get_input_file_path())
+        bin_filepath = os.path.join(cur_workpath, '%s.bytes' % ida_nalt.get_input_file_path())
 
-        if os.path.isfile(xml_filepath_t) and os.path.isfile(bin_filepath_t):
+        if os.path.isfile(xml_filepath) and os.path.isfile(bin_filepath):
             if ida_kernwin.ask_yn(0, '导出文件已存在，是否覆盖？') == 1:
                 do_export()
         else:

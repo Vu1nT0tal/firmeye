@@ -3,7 +3,7 @@
 import ida_kernwin
 
 from firmeye.view.custviewer import CustViewer
-from firmeye.helper import num_to_hexstr
+from firmeye.helper import hexstr
 
 
 class AnalysisChooseData():
@@ -36,11 +36,11 @@ class AnalysisChooser(ida_kernwin.Choose):
 
     def OnGetLine(self, n):
         d = self.items[n]
-        data = [str(d.vuln), d.name, num_to_hexstr(d.ea)]
+        data = [str(d.vuln), d.name, hexstr(d.ea)]
 
         for x in [d.vuln, d.addr2]:
             if x != None:
-                data.append(num_to_hexstr(x))
+                data.append(hexstr(x))
             else:
                 continue
 

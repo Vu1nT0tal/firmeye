@@ -37,10 +37,10 @@ class FELogger():
         @wraps(func)
         def wrapper(*args, **kwargs):
             if cls.get_dbg_mode():
-                cur_workpath_t = os.getcwd()
-                log_filename_t = '%s.xdbg' % ida_nalt.get_input_file_path().split('\\')[-1]
-                log_filepath_t = os.path.join(cur_workpath_t, log_filename_t)
-                cls.__log_path = log_filepath_t
+                cur_workpath = os.getcwd()
+                log_filename = '%s.xdbg' % ida_nalt.get_input_file_path().split('\\')[-1]
+                log_filepath = os.path.join(cur_workpath, log_filename)
+                cls.__log_path = log_filepath
                 if cls.__log_fd:
                     cls.__log_fd.close()
                     cls.__log_fd = None

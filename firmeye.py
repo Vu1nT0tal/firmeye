@@ -31,40 +31,40 @@ class Firmeye(ida_idaapi.plugin_t):
     act_test = 'firmeye:functional_test'
 
     def _init_actions(self):
-        action_t = ida_kernwin.action_desc_t(
+        action = ida_kernwin.action_desc_t(
             self.act_static,
             'static analyzer: main menu',
             FEStaticAnalyzer(),
             'Ctrl+Shift+s',
             '静态分析器主菜单', 0)
-        ida_kernwin.register_action(action_t)
+        ida_kernwin.register_action(action)
         ida_kernwin.attach_action_to_menu(MENU_PATH, self.act_static, ida_kernwin.SETMENU_APP)
 
-        action_t = ida_kernwin.action_desc_t(
+        action = ida_kernwin.action_desc_t(
             self.act_dbg_hook,
             'dynamic analyzer: enable/disable debug hook',
             FEDynamicAnalyzer(),
             'Ctrl+Shift+d',
             '启用/解除DEBUG Hook', 0)
-        ida_kernwin.register_action(action_t)
+        ida_kernwin.register_action(action)
         ida_kernwin.attach_action_to_menu(MENU_PATH, self.act_dbg_hook, ida_kernwin.SETMENU_APP)
 
-        action_t = ida_kernwin.action_desc_t(
+        action = ida_kernwin.action_desc_t(
             self.act_test,
             'reverse assist tools',
             FEReAssist(),
             'Ctrl+Shift+x',
             '逆向辅助工具', 0)
-        ida_kernwin.register_action(action_t)
+        ida_kernwin.register_action(action)
         ida_kernwin.attach_action_to_menu(MENU_PATH, self.act_assist, ida_kernwin.SETMENU_APP)
 
-        action_t = ida_kernwin.action_desc_t(
+        action = ida_kernwin.action_desc_t(
             self.act_test,
             'functional test',
             FEFuncTest(),
             'Ctrl+Shift+q',
             '功能性测试', 0)
-        ida_kernwin.register_action(action_t)
+        ida_kernwin.register_action(action)
         ida_kernwin.attach_action_to_menu(MENU_PATH, self.act_test, ida_kernwin.SETMENU_APP)
 
     def _detach_menu_action(self):
