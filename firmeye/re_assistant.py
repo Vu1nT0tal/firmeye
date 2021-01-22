@@ -56,10 +56,19 @@ Ghidra函数列表
         elfpath = ida_nalt.get_input_file_path()
         if os.path.exists(elfpath):
             result = Checksec(elfpath)
-            FELogger.info("-"*50+" Checksec "+"-"*50)
+            FELogger.info("-"*10+"Checksec"+"-"*10+elfpath+"-"*10)
             FELogger.info(result.sec)
         else:
-            FELogger.info("原始文件不存在：%s" % elfpath)
+            input_path = ida_kernwin.ask_str(elfpath, 0, "请输入原始Binary路径")
+            if input_path and input_path != "":
+                if os.path.exists(input_path):
+                    result = Checksec(input_path)
+                    FELogger.info("-"*10+"Checksec"+"-"*10+input_path+"-"*10)
+                    FELogger.info(result.sec)
+                else:
+                    FELogger.info("原始Binary不存在：%s" % input_path)
+            else:
+                FELogger.info("原始Binary不存在：%s" % elfpath)
 
     def btn_imp_ghidra_funcs(self, code=0):
         """
