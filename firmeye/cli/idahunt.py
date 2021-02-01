@@ -102,10 +102,13 @@ def detect_arch(filename):
 
     return arch
 
-# Does the initial auto-analysis when we first open a file in IDA
-# Returns False if does not do anything, the subprocess if it was created
-# of True if it was listing only.
 def analyse_file(ida_executable, infile, logfile, idbfile, verbose, ida_args=None, script=None, list_only=False):
+    """
+    Does the initial auto-analysis when we first open a file in IDA
+    Returns False if does not do anything, the subprocess if it was created
+    of True if it was listing only.
+    """
+
     if os.path.isfile(idbfile):
         logmsg("Skipping existing IDB %s. Analysis has already been made" % idbfile, debug=verbose)
         return False
@@ -129,10 +132,13 @@ def analyse_file(ida_executable, infile, logfile, idbfile, verbose, ida_args=Non
     else:
         return True
 
-# Re-open an existing IDB
-# Returns False if does not do anything, the subprocess if it was created
-# of True if it was listing only.
 def open_file(ida_executable, infile, logfile, idbfile, verbose, ida_args=None, script=None, list_only=False):
+    """
+    重新打开已存在的 IDB
+    Returns False if does not do anything, the subprocess if it was created
+    of True if it was listing only.
+    """
+
     if not os.path.isfile(idbfile):
         logmsg("Skipping no existing IDB %s. Execute --analyse first." % idbfile, debug=verbose)
         return False
@@ -155,10 +161,13 @@ def open_file(ida_executable, infile, logfile, idbfile, verbose, ida_args=None, 
     # operation from the user anyway
     return True
 
-# Re-open an existing IDB and execute an IDA Python script before leaving
-# Returns False if does not do anything, the subprocess if it was created
-# of True if it was listing only.
 def exec_ida_python_script(ida_executable, infile, logfile, idbfile, verbose, ida_args=None, script=None, list_only=False):
+    """
+    Re-open an existing IDB and execute an IDA Python script before leaving
+    Returns False if does not do anything, the subprocess if it was created
+    of True if it was listing only.
+    """
+
     if not script:
         logmsg("Skipping because no script provided. Need a script to execute it in IDA", debug=verbose)
         return False
@@ -225,9 +234,13 @@ def delete_asm_files(inputdir, list_only=False):
             if not list_only:
                 os.remove(f)
 
-# main function handling an input folder
-# do_file is one of {analyse_file,open_file,exec_ida_python_script}
 def do_dir(inputdir, filter, verbose, max_ida, do_file, ida_args=None, script=None, list_only=False):
+    """
+    处理输入目录的主函数
+
+    do_file: analyse_file/open_file/exec_ida_python_script 中的一个
+    """
+
     pids = []
     call_count = 0
     exec_count = 0
@@ -378,7 +391,6 @@ if __name__ == "__main__":
                 except subprocess.CalledProcessError:
                     pass
         else:
-            #IDA32="C:\\Program Files\\IDA " + ida_version + "\\ida.exe"
             IDA32="C:\\Program Files\\IDA Pro " + ida_version + "\\ida.exe"
             ida32_found = True
 
@@ -400,7 +412,6 @@ if __name__ == "__main__":
                 except subprocess.CalledProcessError:
                     pass
         else:
-            #IDA64="C:\\Program Files\\IDA " + ida_version + "\\ida64.exe"
             IDA64="C:\\Program Files\\IDA Pro " + ida_version + "\\ida64.exe"
             ida64_found = True
 

@@ -17,6 +17,13 @@ def hexstr(num):
     """
     return format(num, '#010x')
 
+def get_mnem(ea):
+    """
+    获取操作符并去除末尾的 ".W"
+    """
+    mnem = ida_ua.print_insn_mnem(ea).split('.')[0]
+    return mnem
+
 def is_func_call(ea):
     """
     判读是否是一个函数调用指令
@@ -77,7 +84,7 @@ def name_to_addr(s):
 
     addr = ida_name.get_name_ea(ida_idaapi.BADADDR, s)
     if addr == ida_idaapi.BADADDR:
-        print("Error: name_to_addr: Failed to find '%s' symbol" % s)
+        print("[Error] name_to_addr: Failed to find '%s' symbol" % s)
         return None
     return addr
 
@@ -87,7 +94,7 @@ def addr_to_name(ea):
     """
     name = ida_name.get_name(ea, ida_name.GN_VISIBLE)
     if name == "":
-        print("Error: addr_to_name: Failed to find '0x%x' address" % ea)
+        print("[Error] addr_to_name: Failed to find '0x%x' address" % ea)
         return ""
     return name
 
@@ -153,12 +160,12 @@ def get_call_args_arm(ea, count_max=10):
         count += 1
     return args
 
-def find_ret_block(addr):
+def find_ret_block(ea):
     """
     寻找函数返回块，不支持多返回函数
     """
 
-    func = ida_funcs.get_func(addr)
+    func = ida_funcs.get_func(ea)
     f = ida_gdl.FlowChart(func)
     for block in f:
         if ida_gdl.is_ret_block(block.type):

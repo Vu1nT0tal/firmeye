@@ -9,11 +9,13 @@ import ida_funcs
 import ida_kernwin
 import ida_auto
 import ida_nalt
+import ida_hexrays
 import idautils
 
 from firmeye.helper import hexstr
 from firmeye.logger import FELogger
 from firmeye.tools.idapyhelper import PyHelperChooser
+from firmeye.tools.hexrayshelper import get_ctree_graph
 from firmeye.tools.checksec import Checksec
 from firmeye.view.chooser import AnalysisChooser, AnalysisChooseData
 from firmeye.idaxml import XmlExporter, Cancelled
@@ -26,16 +28,19 @@ class FEReAssistForm(ida_kernwin.Form):
 Reverse Assistant
 IDAPython帮助:
 <##查看:{btn_idapy_helper}>
+HexRays ctree图：
+<##查看:{btn_hexrays_helper}>
 Checksec：
 <##查看:{btn_checksec}>
-Ghidra函数列表
+Ghidra函数列表：
 <##导入:{btn_imp_ghidra_funcs}>
-函数调用次数统计
+函数调用次数统计：
 <##开始:{btn_func_xref_count}>
-导出XML到Ghidra
+导出XML到Ghidra：
 <##导出:{btn_export_ida_to_xml}>
 """, {
     'btn_idapy_helper': ida_kernwin.Form.ButtonInput(self.btn_idapy_helper),
+    'btn_hexrays_helper': ida_kernwin.Form.ButtonInput(self.btn_hexrays_helper),
     'btn_checksec': ida_kernwin.Form.ButtonInput(self.btn_checksec),
     'btn_imp_ghidra_funcs': ida_kernwin.Form.ButtonInput(self.btn_imp_ghidra_funcs),
     'btn_func_xref_count': ida_kernwin.Form.ButtonInput(self.btn_func_xref_count),
@@ -48,6 +53,14 @@ Ghidra函数列表
         """
         helper = PyHelperChooser("IDAPyHelper")
         helper.Show()
+
+    def btn_hexrays_helper(self, code=0):
+        """
+        HexRays ctree图
+        """
+        ea = ida_kernwin.get_screen_ea()
+        get_ctree_graph(ea)
+
 
     def btn_checksec(self, code=0):
         """

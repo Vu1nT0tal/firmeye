@@ -16,7 +16,7 @@ import idautils
 
 from firmeye.config import SINK_FUNC, INST_LIST, SOURCE_FUNC
 from firmeye.logger import FELogger
-from firmeye.helper import hexstr, name_to_addr
+from firmeye.helper import hexstr, name_to_addr, get_mnem
 
 
 class FESinkFuncMgr():
@@ -166,24 +166,26 @@ class FEArgsTracer():
         reg_t = reg
         addr_t = addr
 
-        mnem = ida_ua.print_insn_mnem(addr_t)
+        mnem = get_mnem(addr_t)
         line = idc.generate_disasm_line(addr_t, 0)
         if mnem.startswith('BLX') and addr_t != self.trace_addr:
             FELogger.info("途径函数\t"+hexstr(addr)+"\t"+line)
             func_name = idc.print_operand(addr_t, 0)
-            if reg_t == 'R0':
-                does_return = ida_funcs.get_func(name_to_addr(func_name)).does_return()
-                if does_return == True:
-                    FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
-                    return None
-            else:
-                if func_name in SOURCE_FUNC and reg_t == SOURCE_FUNC[func_name]['dest']:
-                    reg_t = SOURCE_FUNC[func_name]['src']
-                    if reg_t == 'None':
+            func_addr = name_to_addr(func_name)
+            if func_addr is not None:
+                if reg_t == 'R0':
+                    does_return = ida_funcs.get_func(func_addr).does_return()
+                    if does_return == True:
                         FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
                         return None
-                    else:
-                        FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
+                else:
+                    if func_name in SOURCE_FUNC and reg_t == SOURCE_FUNC[func_name]['dest']:
+                        reg_t = SOURCE_FUNC[func_name]['src']
+                        if reg_t == 'None':
+                            FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
+                            return None
+                        else:
+                            FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
 
         inst_list_t = INST_LIST
         reg_re = re.compile(reg_t + '\\D|' + reg_t + '\\Z')
@@ -255,7 +257,7 @@ class FEArgsTracer():
                             elif idc.get_operand_type(addr_t, 1) == ida_ua.o_reg:
                                 reg_t = op2_tmp
                                 FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
-                            elif mnem in ['MOVT.W', 'MOVTGT.W', 'MOVTLE.W']:
+                            elif mnem in ['MOVT', 'MOVTGT', 'MOVTLE']:
                                 FELogger.info("回溯"+reg_t+"\t"+hexstr(addr)+"\t"+line)
                             else:
                                 FELogger.info("找到赋值点\t"+hexstr(addr)+"\t"+line)
@@ -440,7 +442,7 @@ class FEStrMgr():
                 elif len(list(idautils.DataRefsFrom(x))) == 0:
                     reg_t = idc.print_operand(addr_t, 0)
                     num1 = ida_bytes.get_wide_dword(x)
-                    while ida_ua.print_insn_mnem(addr_t) != 'ADD' or (idc.print_operand(addr_t, 0) != reg_t and idc.print_operand(addr_t, 1) != 'PC'):
+                    while get_mnem(addr_t) != 'ADD' or (idc.print_operand(addr_t, 0) != reg_t and idc.print_operand(addr_t, 1) != 'PC'):
                         addr_t = ida_bytes.next_head(addr_t, ida_idaapi.BADADDR)
                     num2 = addr_t + 8
                     addr_t = num1 + num2
@@ -448,10 +450,10 @@ class FEStrMgr():
 
         # MOVW R1, #0x87B4
         # MOVT.W R1, #0x52
-        if strs == [] and ida_ua.print_insn_mnem(addr_t) == 'MOVW':
+        if strs == [] and get_mnem(addr_t) == 'MOVW':
             reg_t = idc.print_operand(addr_t, 0)
             num1 = int(idc.print_operand(addr_t, 1).split('#')[1], 16)
-            while ida_ua.print_insn_mnem(addr_t) not in ['MOVTGT.W', 'MOVTLE.W', 'MOVT.W'] or idc.print_operand(addr_t, 0) != reg_t:
+            while get_mnem(addr_t) not in ['MOVTGT', 'MOVTLE', 'MOVT'] or idc.print_operand(addr_t, 0) != reg_t:
                 addr_t = ida_bytes.next_head(addr_t, ida_idaapi.BADADDR)
             num2 = int(idc.print_operand(addr_t, 1).split('#')[1], 16)
             addr_t = (num2<<16) + num1

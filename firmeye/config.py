@@ -2,7 +2,10 @@
 
 import os
 
-DEBUG = True    # 配置DEBUG模式
+
+THEME = "default"   # 配置主题 default/dark
+
+DEBUG = True        # 配置 debug 模式
 
 GHIDRA_PATH = 'E:\\ghidra_9.0.4'
 GHIDRA_HEADLESS_PATH = os.path.join(GHIDRA_PATH, "support", "analyzeHeadless.bat")
@@ -366,33 +369,54 @@ SOURCE_FUNC = {
 
 INST_LIST = {
     'load': [       # 加载存储指令
-        'LDR', 'LDR.W', 'LDRB', 'LDRB.W', 'LDRD', 'LDRH', 'LDRD.W', 'LDRHI', 'LDRHIB', 'LDRH.W',
-        'LDREQ', 'LDREQSB', 'LDRNE', 'LDRNEB', 'LDRLT', 'LDRLS', 'LDRLE', 'LDRGT', 'LDRGE', 'LDRSB', 'LDRSB.W', 'LDRSH', 'LDRSH.W', 'LDRCC', 'LDRCS', 'LDREQB.W',
+        'LDR', 'LDRB', 'LDRD',
+        'LDRH', 'LDRHI', 'LDRHIB',
+        'LDREQ', 'LDREQB', 'LDREQSB',
+        'LDRNE', 'LDRNEB',
+        'LDRLT', 'LDRLS', 'LDRLE',
+        'LDRGT', 'LDRGE',
+        'LDRSB', 'LDRSH',
+        'LDRCC', 'LDRCS',
         'VLDR'
     ],
     'move': [       # 数据传送指令
-        'MOV', 'MOV.W', 'MOVS', 'MOVCS', 'MOVCS.W', 'MOVCC', 'MOVEQ', 'MOVNE', 'MOVLT', 'MOVLS', 'MOVLE', 'MOVGT', 'MOVGE', 'MOVGE.W', 'MOVHI', 'MOVHI.W', 'MOVT', 'MOVW', 'MOVT.W', 'MOVTGT.W', 'MOVTLE.W',
-        'VMOV', 'MVN',
+        'MOV', 'MOVS', 'MOVCS', 'MOVCC', 'MOVEQ', 'MOVNE', 'MOVLT', 'MOVLS', 'MOVLE', 'MOVGT', 'MOVGE', 'MOVHI', 'MOVT', 'MOVW', 'MOVTGT', 'MOVTLE',
+        'VMOV',
+        'MVN',
         'VCVT.F64.F32',
-        'REV', 'REV.W', 'CLZ'
+        'REV',
+        'CLZ'
     ],
     'arithmetic': [ # 运算指令
-        'ADD', 'ADDS', 'ADDCS', 'ADDCC', 'ADDEQ', 'ADDEQ.W', 'ADDNE', 'ADDNE.W', 'ADDLT', 'ADDLT.W', 'ADDLS', 'ADDLE', 'ADDGT', 'ADDGE', 'ADDHI', 'ADD.W', 'ADDW',
+        'ADD', 'ADDS', 'ADDCS', 'ADDCC', 'ADDEQ', 'ADDNE', 'ADDLT', 'ADDLS', 'ADDLE', 'ADDGT', 'ADDGE', 'ADDHI', 'ADDW',
         'ADC',
-        'SUB', 'SUBS', 'SUBS.W', 'SUB.W', 'SUBGT.W', 'SUBCC', 'SUBCS', 'SUBLE', 'SUBLT', 'SUBLS', 'SUBEQ', 'SUBNE',
-        'MUL', 'MULS', 'MUL.W', 'MLA.W', 'MLS.W',
-        'SDIV', 'UDIV',
-        'RSB', 'RSBNE', 'RSBNE.W', 'RSBHI', 'RSBGT', 'RSB.W', 'RSBCS', 'RSBCC', 'LSL.W', 'LSL', 'LSLS', 'LSRS', 'ASR', 'ASRS',
-        'AND', 'ANDS', 'ANDS.W', 'ORR', 'ORRS', 'ORR.W', 'ORRLE', 'EOR', 'BIC',
-        'UXTH', 'UXTH.W', 'UBFX.W', 'UBFX', 'UXTB',
-        'SXTB', 'SXTH',
-        'MLA', 'MLAEQ', 'MLANE', 'MLS', 'MUL',
+        'SUB', 'SUBS', 'SUBGT', 'SUBCC', 'SUBCS', 'SUBLE', 'SUBLT', 'SUBLS', 'SUBEQ', 'SUBNE',
+        'MUL', 'MULS',
+        'MLA', 'MLAEQ', 'MLANE'
+        'MLS',
+        'SDIV',
+        'UDIV',
+        'RSB', 'RSBNE', 'RSBHI', 'RSBGT', 'RSBCS', 'RSBCC',
+        'LSL', 'LSLS',
+        'LSRS',
+        'ASR', 'ASRS',
+        'AND', 'ANDS',
+        'ORR', 'ORRS', 'ORRLE',
+        'EOR',
+        'BIC',
+        'UBFX',
+        'UXTH', 'UXTB',
+        'SXTB', 'SXTH'
     ],
     'load_multi': [ # 块数据传送指令
-        'LDMFD', 'LDMEQFD', 'LDMEQIB', 'LDMDB', 'LDMDB.W', 'LDMIA', 'LDMIA.W', 'LDMIB', 'LDMLEFD'
+        'LDMFD', 'LDMEQFD', 'LDMEQIB', 'LDMDB', 'LDMIA', 'LDMIB', 'LDMLEFD'
     ],
     'other': [      # 其他指令
-        'STR', 'STR.W', 'STRB', 'STRB.W', 'STREQ', 'STREQB', 'STREQ.W', 'STRNE', 'STRNEB', 'STRLE', 'STRLS', 'STRH.W', 'STRGT', 'STRH', 'STRHI', 'STRGE', 'STRGEH', 'STRLT',
-        'CMP', 'CMP.W', 'CMPNE', 'CMPGT', 'CMPEQ', 'CMPLS', 'CMPNE.W', 'CMPCS', 'CMN', 'CMN.W', 'CBZ', 'CBNZ', 'STMEA', 'STMEA.W', 'STMFD', 'PUSH.W', 'PUSH', 'BLX', 'TST'
+        'STR', 'STRB', 'STREQ', 'STREQB', 'STRNE', 'STRNEB', 'STRLE', 'STRLS', 'STRGT', 'STRH', 'STRHI', 'STRGE', 'STRGEH', 'STRLT',
+        'CMP', 'CMPNE', 'CMPGT', 'CMPEQ', 'CMPLS', 'CMPCS',
+        'CMN',
+        'CBZ', 'CBNZ',
+        'STMEA', 'STMFD',
+        'PUSH', 'BLX', 'TST'
     ]
 }

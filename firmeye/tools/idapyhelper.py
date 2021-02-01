@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# https://github.com/patois/IDAPyHelper
 
 import os
 import inspect

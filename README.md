@@ -14,11 +14,12 @@ firmeye 是一个 IDA 插件，基于敏感函数参数回溯来辅助漏洞挖�
 
 1. 下载本项目：`https://github.com/firmianay/firmeye.git`。
 2. 安装依赖：`pip install -r requirements.txt`。
-3. 将 `firmeye` 和 `firmeye.py` 复制到 IDA Pro 插件目录下，例如 `C:\Program Files\IDA 7.0\plugins`。
+3. 将 `firmeye` 和 `firmeye.py` 复制到 IDA Pro 插件目录下，例如 `C:\Program Files\IDA Pro 7.5\plugins`。
 4. 打开 IDA Pro 并加载待分析固件程序。
 5. `Ctrl+F1` 查看插件使用帮助。热键：
     - `Ctrl+Shift+s`：主菜单
     - `Ctrl+Shift+d`：启动/禁用调试钩子
+    - `Ctrl+Shift+c`：扫描代码模式（TODO）
     - `Ctrl+Shift+x`：逆向辅助工具
     - `Ctrl+Shift+q`：功能测试
 

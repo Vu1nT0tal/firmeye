@@ -8,6 +8,7 @@ from firmeye.constants import *
 from firmeye.logger import FELogger
 from firmeye.analysis.static import FEStaticAnalyzer
 from firmeye.analysis.dynamic import FEDynamicAnalyzer
+from firmeye.hexraystool import FECodePattern 
 from firmeye.re_assistant import FEReAssist
 from firmeye.test import FEFuncTest
 
@@ -27,6 +28,7 @@ class Firmeye(ida_idaapi.plugin_t):
 
     act_static = 'firmeye:static_main'
     act_dbg_hook = 'firmeye:dynamic_change_debug_hook_mode'
+    act_pattern = 'firmeye:code_pattern'
     act_assist = 'firmeye:reverse_assistant'
     act_test = 'firmeye:functional_test'
 
@@ -50,6 +52,15 @@ class Firmeye(ida_idaapi.plugin_t):
         ida_kernwin.attach_action_to_menu(MENU_PATH, self.act_dbg_hook, ida_kernwin.SETMENU_APP)
 
         action = ida_kernwin.action_desc_t(
+            self.act_pattern,
+            'code pattern: find code pattern',
+            FECodePattern(),
+            'Ctrl+Shift+c',
+            '代码模式扫描', 0)
+        ida_kernwin.register_action(action)
+        ida_kernwin.attach_action_to_menu(MENU_PATH, self.act_pattern, ida_kernwin.SETMENU_APP)
+
+        action = ida_kernwin.action_desc_t(
             self.act_test,
             'reverse assist tools',
             FEReAssist(),
@@ -70,15 +81,13 @@ class Firmeye(ida_idaapi.plugin_t):
     def _detach_menu_action(self):
         ida_kernwin.detach_action_from_menu(MENU_PATH, self.act_static)
         ida_kernwin.detach_action_from_menu(MENU_PATH, self.act_dbg_hook)
+        ida_kernwin.detach_action_from_menu(MENU_PATH, self.act_pattern)
         ida_kernwin.detach_action_from_menu(MENU_PATH, self.act_assist)
         ida_kernwin.detach_action_from_menu(MENU_PATH, self.act_test)
 
-    def _install_plugins(self):
-        self._init_actions()
-
     def init(self):
         try:
-            self._install_plugins()
+            self._init_actions()
         except Exception as e:
             FELogger.erro(e.__str__())
         return ida_idaapi.PLUGIN_KEEP

@@ -20,6 +20,10 @@ PLUGIN_HELP = '''
 #                                                                            #
 #    Ctrl+Shift+d        enable/disable debug hook                           #
 #                                                                            #
+# --------------------------- CODE PATTERN --------------------------------- #
+#                                                                            #
+#    Ctrl+Shift+c        find code pattern                                   #
+#                                                                            #
 # --------------------------- REVERSE ASSISTANT ---------------------------- #
 #                                                                            #
 #    Ctrl+Shift+x        reverse assist tools                                #
