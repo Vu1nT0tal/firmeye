@@ -1,27 +1,50 @@
 # -*- coding: utf-8 -*-
 # https://github.com/patois/HexraysToolbox
+# commit: 1ca5e93ed65d8dfa91cc25b8a42452113a1f0eb4
 
-import ida_hexrays as hr
+import ida_hexrays as hx
 import ida_bytes
 import idautils
 import ida_kernwin
 import ida_lines
 import ida_funcs
 import idc
+import ida_idaapi
 
 from firmeye.logger import FELogger
 
+SCRIPT_NAME = "[toolbox]"
 
-class tb_result_t():
-    def __init__(self, i):
-        self.ea = i.ea
-        self.v = ida_lines.tag_remove(i.print1(None))
+class query_result_t():
+    def __init__(self, cfunc=None, i=None):
+        if isinstance(cfunc, hx.cfuncptr_t):
+            self.entry = cfunc.entry_ea
+        elif isinstance(cfunc, int):
+            self.entry = cfunc
+        else:
+            self.entry = BADADDR
+        if isinstance(i, (hx.cexpr_t, hx.cinsn_t)):
+            self.ea = i.ea if not isinstance(cfunc, hx.cfuncptr_t) else self.find_closest_address(cfunc, i)
+            self.v = ida_lines.tag_remove(i.print1(None))
+        elif isinstance(i, tuple):
+            self.ea, self.v = i
+        else:
+            self.ea = ida_idaapi.BADADDR
+            self.v = "<undefined>"
+
+    def find_closest_address(self, cfunc, i):
+        parent = i
+        while parent:
+            if parent and parent.ea != BADADDR:
+                return parent.ea
+            parent = cfunc.body.find_parent_of(parent)
+        return BADADDR
 
     def __str__(self):
-        return "%x: %s" % (self.ea, self.v)
+        return "[%x] %x: \"%s\"" % (self.entry, self.ea, self.v)
 
 
-def find_item(ea, q, parents=False):
+def find_item(ea, q, parents=False, flags=0):
     """在函数伪代码的 AST 中搜索 item
 
     ea: 函数内任意地址
@@ -29,19 +52,22 @@ def find_item(ea, q, parents=False):
     parents: False -> 丢弃 cexpr_t 父节点
              True  -> 维护 citem_t 父节点
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
-    try:
-        f = ida_funcs.get_func(ea)
-        if f:
-            cfunc = hr.decompile(f)
-    except:
-        print("%x: unable to decompile." % ea)
-        return list()
+    f = ida_funcs.get_func(ea)
+    if f:
+        cfunc = None
+        hf = hx.hexrays_failure_t()
+        try:
+            cfunc = hx.decompile(f, hf, flags)
+        except Exception as e:
+            print("%s %x: unable to decompile: '%s'" % (SCRIPT_NAME, ea, hf))
+            print("\t (%s)" % e)
+            return list()
 
-    if cfunc:
-        return find_child_item(cfunc, cfunc.body, q, parents)
+        if cfunc:
+            return find_child_item(cfunc, cfunc.body, q, parents)
     return list()
 
 def find_child_item(cfunc, i, q, parents=False):
@@ -51,13 +77,13 @@ def find_child_item(cfunc, i, q, parents=False):
     i: citem_t
     q: lambda/function: f(cfunc_t, citem_t) 返回布尔值
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
-    class citem_finder_t(hr.ctree_visitor_t):
+    class citem_finder_t(hx.ctree_visitor_t):
         def __init__(self, cfunc, q, parents):
-            hr.ctree_visitor_t.__init__(self,
-                hr.CV_PARENTS if parents else hr.CV_FAST)
+            hx.ctree_visitor_t.__init__(self,
+                hx.CV_PARENTS if parents else hx.CV_FAST)
 
             self.cfunc = cfunc
             self.query = q
@@ -66,7 +92,7 @@ def find_child_item(cfunc, i, q, parents=False):
 
         def process(self, i):
             if self.query(self.cfunc, i):
-                self.found.append(tb_result_t(i))
+                self.found.append(query_result_t(self.cfunc, i))
             return 0
 
         def visit_insn(self, i):
@@ -81,7 +107,7 @@ def find_child_item(cfunc, i, q, parents=False):
         return itfinder.found
     return list()
 
-def find_expr(ea, q, parents=False):
+def find_expr(ea, q, parents=False, flags=0):
     """在函数伪代码的 AST 中搜索表达式
 
     ea: 函数内任意地址
@@ -89,19 +115,22 @@ def find_expr(ea, q, parents=False):
     parents: False -> 丢弃 cexpr_t 父节点
              True  -> 维护 citem_t 父节点
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
-    try:
-        f = ida_funcs.get_func(ea)
-        if f:
-            cfunc = hr.decompile(f)
-    except:
-        print("%x: unable to decompile." % ea)
-        return list()
+    f = ida_funcs.get_func(ea)
+    if f:
+        cfunc = None
+        hf = hx.hexrays_failure_t()
+        try:
+            cfunc = hx.decompile(f, hf, flags)
+        except Exception as e:
+            print("%s %x: unable to decompile: '%s'" % (SCRIPT_NAME, ea, hf))
+            print("\t (%s)" % e)
+            return list()
 
-    if cfunc:
-        return find_child_expr(cfunc, cfunc.body, q, parents)
+        if cfunc:
+            return find_child_expr(cfunc, cfunc.body, q, parents)
     return list()
 
 def find_child_expr(cfunc, e, q, parents=False):
@@ -111,13 +140,13 @@ def find_child_expr(cfunc, e, q, parents=False):
     e: cexpr_t
     q: lambda/function: f(cfunc_t, citem_t) 返回布尔值
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
-    class expr_finder_t(hr.ctree_visitor_t):
+    class expr_finder_t(hx.ctree_visitor_t):
         def __init__(self, cfunc, q, parents):
-            hr.ctree_visitor_t.__init__(self,
-                hr.CV_PARENTS if parents else hr.CV_FAST)
+            hx.ctree_visitor_t.__init__(self,
+                hx.CV_PARENTS if parents else hx.CV_FAST)
 
             self.cfunc = cfunc
             self.query = q
@@ -126,7 +155,7 @@ def find_child_expr(cfunc, e, q, parents=False):
 
         def visit_expr(self, e):
             if self.query(self.cfunc, e):
-                self.found.append(tb_result_t(e))
+                self.found.append(query_result_t(self.cfunc, e))
             return 0
 
     if cfunc:
@@ -135,7 +164,7 @@ def find_child_expr(cfunc, e, q, parents=False):
         return expfinder.found
     return list()
 
-def exec_query(q, ea_list, query_full):
+def exec_query(q, ea_list, query_full, parents=False, flags=0):
     """在地址列表上执行 find_item 或 find_item
 
     q: lambda/function: f(cfunc_t, citem_t) 返回布尔值
@@ -143,13 +172,13 @@ def exec_query(q, ea_list, query_full):
     query_full: False -> 仅搜索 cexpr_t
                 True  -> 搜索 citem_t（包括 cexpr_t 和 cinsn_t）
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
     find_elem = find_item if query_full else find_expr
     result = list()
     for ea in ea_list:
-        result += [e for e in find_elem(ea, q)]
+        result += find_elem(ea, q, parents=parents, flags=flags)
     return result
 
 def query_db(q, query_full=True, do_print=False):
@@ -159,7 +188,7 @@ def query_db(q, query_full=True, do_print=False):
     query_full: False -> 仅搜索 cexpr_t
                 True  -> 搜索 citem_t（包括 cexpr_t 和 cinsn_t）
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
     return query(q, ea_list=idautils.Functions(), query_full=query_full, do_print=do_print)
@@ -172,7 +201,7 @@ def query(q, ea_list=None, query_full=True, do_print=False):
     query_full: False -> 仅搜索 cexpr_t
                 True  -> 搜索 citem_t（包括 cexpr_t 和 cinsn_t）
 
-    return: tb_result_t 对象列表
+    return: query_result_t 对象列表
     """
 
     if not ea_list:
@@ -183,7 +212,7 @@ def query(q, ea_list=None, query_full=True, do_print=False):
         if do_print:
             print("<query> done! %d unique hits." % len(r))
             for e in r:
-                print("%x: %s" % (e.ea, e.v))
+                print(e)
     except Exception as exc:
         print("<query> error:", exc)
     return r
@@ -192,19 +221,42 @@ def query(q, ea_list=None, query_full=True, do_print=False):
 class ic_t(ida_kernwin.Choose):
     """citem_t 选择器
 
-    q: lambda/function: f(cfunc_t, citem_t) 返回布尔值或者 tb_result_t 对象列表
+    q: lambda/function: f(cfunc_t, citem_t) 返回布尔值或者 query_result_t 对象列表
     ea_list: 地址列表
     query_full: False -> 仅搜索 cexpr_t
                 True  -> 搜索 citem_t（包括 cexpr_t 和 cinsn_t）
     """
+    window_title = "Hexrays Toolbox"
 
-    def __init__(self, q, ea_list=None, query_full=True,
+    def __init__(self,
+            q=None,
+            ea_list=None,
+            query_full=True,
             flags=ida_kernwin.CH_RESTORE | ida_kernwin.CH_QFLT,
-            width=None, height=None, embedded=False, modal=False):
+            title=None,
+            width=None,
+            height=None,
+            embedded=False,
+            modal=False):
+
+        _title = ""
+        i = 0
+        idx = ""
+        pfx = ""
+        exists = True
+        while exists:
+            idx = chr(ord('A')+i%26)
+            _title = "%s-%s%s" % (ic_t.window_title, pfx, idx)
+            if title:
+                _title += ": %s" % title
+            exists = (ida_kernwin.find_widget(_title) != None)
+            i += 1
+            pfx += "" if i % 26 else "A"
+
         ida_kernwin.Choose.__init__(self,
-            "Hexrays Toolbox",
-            [ ["地址", 10 | ida_kernwin.CHCOL_EA],
-              ["函数", 20 | ida_kernwin.CHCOL_FNAME],
+            _title,
+            [ ["函数", 20 | ida_kernwin.CHCOL_FNAME],
+              ["地址", 10 | ida_kernwin.CHCOL_EA],
               ["输出", 80 | ida_kernwin.CHCOL_PLAIN]],
             flags = flags,
             width = width,
@@ -219,14 +271,16 @@ class ic_t(ida_kernwin.Choose):
             self.items = q
         else:
             self.items = list()
-
         self.Show()
 
     def OnClose(self):
         self.items = []
 
     def OnSelectLine(self, n):
-        ida_kernwin.jumpto(self.items[n].ea)
+        item_ea = self.items[n].ea
+        func_ea = self.items[n].entry
+        ea = func_ea if item_ea == BADADDR else item_ea
+        ida_kernwin.jumpto(ea)
 
     def OnGetLine(self, n):
         return self._make_choser_entry(n)
@@ -234,19 +288,23 @@ class ic_t(ida_kernwin.Choose):
     def OnGetSize(self):
         return len(self.items)
 
-    """
     def append(self, data):
+        if not isinstance(data, query_result_t):
+            return False
         self.items.append(data)
         self.Refresh()
-        return
-    """
+        return True
+
     def set_data(self, data):
         self.items = data
         self.Refresh()
 
+    def get_data(self):
+        return self.items
+
     def _make_choser_entry(self, n):
-        return ["%08x" % self.items[n].ea,
-                "%s" % idc.get_func_off_str(self.items[n].ea),
+        return ["%s" % idc.get_func_off_str(self.items[n].entry),
+                "%016x" % self.items[n].ea if __EA64__ else "%08x" % self.items[n].ea,
                 self.items[n].v]
 
 
