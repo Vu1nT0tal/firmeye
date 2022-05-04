@@ -52,6 +52,8 @@ $ python3 idahunt.py --inputdir C:\xxxx --filter "names.py -a 32 -v" --scripts "
 - 加入动态污点分析作为辅助
 - 支持更多体系架构，如 x86、MIPS 等
 
-## Stargazers over time
+## LICENSE
 
-[![Stargazers over time](https://starchart.cc/firmianay/firmeye.svg)](https://starchart.cc/firmianay/firmeye)
+GNU General Public License v3.0
+
+[![Stargazers over time](https://starchart.cc/VulnTotal-Team/firmeye.svg)](https://starchart.cc/VulnTotal-Team/firmeye)
